@@ -686,6 +686,8 @@ function gene_hover(central_gene : string,
     var over_gene = function () {
         select("path#" + select(this).attr("id") + ".stroke")
           .style("opacity", 1);
+        select("text#" + select(this).attr("id") + ".notation")
+          .style("fill", "var(--black)");
         var leaf = select("g#uni" + central_gene);
         leaf.select("circle")
           .style("stroke", "#ff8c00")
@@ -703,6 +705,8 @@ function gene_hover(central_gene : string,
       var leave_gene = function () {
         select("path#" + select(this).attr("id") + ".stroke")
          .style("opacity", 0);
+        select("text#" + select(this).attr("id") + ".notation")
+          .style("fill", "var(--sand)");
         var leaf = select("g#uni" + central_gene);
         leaf.select("circle")
           .style("stroke", "#663399")
@@ -945,7 +949,7 @@ function draw_neighbor(g : d3.Selection<SVGElement>,
                              ordinate + gene_rect.h / 1.7,
                              "idx" + counter)
                        .attr("class", "notation")
-                       .attr("opacity", 0);
+                       .style("opacity", 0);
 
             if(options.showName && ["", "NA", undefined].every(i => i!=neigh.preferred_name)){
                 // Only display when it fits
@@ -961,7 +965,7 @@ function draw_neighbor(g : d3.Selection<SVGElement>,
                 }
                 text.text(name)
                     .style('opacity', 1)
-                    .style('fill', '#fefcf8');
+                    .style("fill", "var(--sand)");
             }
 
             // Hover effect over gene representation
