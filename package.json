@@ -1,0 +1,38 @@
+{
+  "name": "geco",
+  "version": "0.1.0",
+  "description": "Genomic context visualization",
+  "module": "./dist/geco.js",
+  "type": "module",
+  "scripts": {
+    "build": "parcel build ./src/geco.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "license": "ISC",
+  "keywords": [
+    "data visualization",
+    "d3",
+    "genomic context",
+    "KEGG",
+    "eggNOG",
+    "function annotation"
+  ],
+  "homepage": "http://<project home page>",
+  "author": "Jorge Botas",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/jorgebotas/GeCo"
+  },
+  "devDependencies": {
+    "@popperjs/core": "^2.4.4",
+    "@types/d3": "^3.5.44",
+    "@types/file-saver": "^2.0.1",
+    "@types/jquery": "^3.5.1",
+    "@types/node": "^14.11.2",
+    "d3": "^3.5.17",
+    "file-saver": "^2.0.2",
+    "jquery": "^3.5.1",
+    "parcel-bundler": "^1.12.4",
+    "typescript": "^4.0.3"
+  }
+}

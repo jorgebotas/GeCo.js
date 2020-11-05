@@ -1,0 +1,26 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "es2015",
+        "moduleResolution": "node",
+        "declaration": true,
+        "allowJs": true,
+        "sourceMap": true,
+        "outDir": "./templates/geco/dist",
+        "lib" : ["dom", "ES2015", "ES2017.Object"],
+        "typeRoots" : [
+            "./node_modules/@types",
+            "./@types"
+        ],
+        "baseUrl": "./static/src",
+        "paths": {
+          "~/*": ["./static/*"]
+        }
+    },
+    "include": ["static/src/**/*"],
+    "exclude": [
+      "node_modules",
+      "dist",
+      "static"
+    ]
+}
