@@ -11,9 +11,10 @@ import { saveAs } from 'file-saver';
 import { atext,
          draw_circle,
          draw_rect } from './render-html';
-import { shuffle } from './helpers';
+import { clean_string, shuffle } from './helpers';
 import { create_popper } from './popper';
 import { Margin,
+         ParamSet,
          OptionSet,
          NSide,
          Notation,
@@ -27,8 +28,8 @@ import { Margin,
 export function get_levels(data : {[index : string] : Gene}, 
                            notation : string) {
     var levels = new Set();
-      (<any>Object).entries(data).forEach(([unigene, d] : [string, Gene]) => {
-          if (unigene != "NA") {
+      (<any>Object).entries(data).forEach(([gene, d] : [string, Gene]) => {
+          if (gene != "NA") {
               (<any>Object).values(d.neighborhood).forEach((neigh : Gene)=> {
                   try{
                       (<any>Object).keys(neigh[notation]).forEach(
@@ -112,7 +113,8 @@ function get_unique_functions(data : {[index:string] : Gene},
  * @param {string} file: path to file containing tree
  * @param {number} nleaf: number of leaves. Used for scaling
  */
-async function draw_newick(newick : TreeNode,
+async function draw_newick(selector : string,
+                           newick : TreeNode,
                            nfield : number,
                            nleaf : number) {
 
@@ -127,33 +129,10 @@ async function draw_newick(newick : TreeNode,
     }
     buildNewickNodes(newick);
 
-    buildPhylogram('#phylogram', newick, {
-      width: 100,
-      height: nleaf * nfield * 21
+    buildPhylogram(selector + ' div#phylogram', newick, {
+      width: 50,
+      height: nleaf * nfield * 18
     });
-
-
-    //await fetch(file)
-          //.then(response => response.text())
-          //.then(data => {
-                //var newick : any = parseNewick(data)
-                //var newickNodes = []
-                //function buildNewickNodes(node : TreeNode) {
-                  //newickNodes.push(node)
-                  //if (node.branchset) {
-                    //for (var i=0; i < node.branchset.length; i++) {
-                      //buildNewickNodes(node.branchset[i])
-                    //}
-                  //}
-                //}
-                //buildNewickNodes(newick)
-                //buildPhylogram('#phylogram', newick, {
-                  //width: 100,
-                  //height: nleaf * nfield * 21
-                //});
-        //})
-
-
   };
 
 
@@ -165,17 +144,20 @@ async function draw_newick(newick : TreeNode,
  * @param {string} notation: string defining name of field in JSON data
  *                           with which to color genomic context
  */
-function draw_legend(div_id : string,
+function draw_legend(selector : string,
+                    div_id : string,
                     title : string,
                     unique_functions : object, 
                     palette : scale.ordinal, 
                     notation : string) : void{
+
+    var d3viz : d3.Selection<HTMLElement> = select(selector);
     if (notation == "GMGFam"){
         var factor = 30;
     } else {
         var factor = 40;
     }
-    var legend = select("div#" + div_id);
+    var legend = d3viz.select("div#" + div_id);
     var legend_h = (<any>Object).keys(unique_functions).length * factor;
     legend.style("width", "100%");
     legend.style("height", Math.min(window.innerHeight - 50, legend_h + 100) + "px");
@@ -241,38 +223,49 @@ function draw_legend(div_id : string,
  * @param {string} div_id: id of div which will contain the graph.
  *                         Default: "graph" <div id="graph"></div>
  */
-export function create_download_button(btn_id : string, 
+export function create_download_button(selector : string,
+                                       btn_id : string, 
                                        filename : string,
                                        div_selector?: string,
                                        data? : JSON, 
-                                       url? : string) : void {
-    var btn = document.getElementById(btn_id);
+                                       url? : string,
+                                       txt? : string) : void {
+    const viz : HTMLElement = document.querySelector(selector);
+    const d3viz: d3.Selection<HTMLElement> = select(selector);
+    console.log(selector)
+    var btn = viz.querySelector("#" + btn_id);
 
-    var r = document.querySelector(':root');
-    var rs = getComputedStyle(r);
-    var sand : string = String(rs.getPropertyValue('--sand'));
+    //var r = document.querySelector(':root');
+    //var rs = getComputedStyle(r);
+    //var sand : string = String(rs.getPropertyValue('--sand'));
 
    if (div_selector) {
         btn.onclick = function() {
-            var graph = document.querySelector(div_selector);
-            select(div_selector + "::-webkit-scrollbar")
+            var graph = viz.querySelector(div_selector);
+            d3viz.select(div_selector + "::-webkit-scrollbar")
                 .style("display", "none");
             // Change background color
-            select(':root').style('--sand', 'white');
+            //select(':root').style('--sand', 'white');
             toBlob(graph , undefined)
                 .then(function (blob : Blob) {
                     saveAs(blob, filename);
         });
             // Reset css
-            select(div_selector + "::-webkit-scrollbar")
+            d3viz.select(div_selector + "::-webkit-scrollbar")
                 .style("display", "initial");
-            select(':root').style('--sand', sand);
+            //select(':root').style('--sand', sand);
         }
    } else if (data) {
        btn.onclick = function () {
-           console.log(data)
            var blob = new Blob([JSON.stringify(data)], {
                          type: "application/json"
+                        });
+           saveAs(blob, filename);
+       }
+   } else if (txt) {
+       btn.onclick = function () {
+           var blob = new Blob([String(txt)], {
+                         type: "plain/txt"
                         });
            saveAs(blob, filename);
        }
@@ -344,19 +337,20 @@ function get_identifiers(neigh : Gene,
  * gene in phylogenetic tree if drawn
  * Alternatively returns ordinate based on graph dimensions
  * @function get_ordinate
- * @param {string} unigene: central gene unigene
+ * @param {string} gene: central gene gene
  * @param {number} counter: unique identifier
  * @param {object} rect: gene representation dimensions
  */
-function get_ordinate(unigene : string, 
+function get_ordinate(viz : HTMLElement,
+                      gene : string, 
                       central_pos : number, 
                       rect : Rect,
                       nfield : number,
                      ) : number{
-    let id = "g#uni" + unigene;
+    let id = "g#g" + clean_string(gene);
     try {
-        let top = document.querySelector(id).getBoundingClientRect().top -
-                  document.getElementById("phylogram").getBoundingClientRect().top;
+        let top = viz.querySelector(id).getBoundingClientRect().top -
+                  viz.querySelector("#phylogram").getBoundingClientRect().top;
         return top-6;
     } catch {
         return 13 + rect.pv + central_pos * (rect.h*nfield + rect.pv - 5)
@@ -372,48 +366,50 @@ function get_ordinate(unigene : string,
  *                         Default: "graph" <div id="graph"></div>
  * @param {boolean} full_reset: Full reset of select box options
  */
-export function erase_graph(div_id : string, full_reset : boolean) : void {
+export function erase_graph(selector : string, div_id : string, full_reset : boolean) : void {
+      const viz : HTMLElement = document.querySelector(selector);
+      const d3viz: d3.Selection<HTMLElement> = select(selector);
       // Remove required tags
-      selectAll("div.required").html("");
+      d3viz.selectAll("div.required").html("");
       // Remove previous poppers if any
-      selectAll(".popper").remove();
+      d3viz.selectAll(".popper").remove();
       // Remove previously computed graph
-      select("svg#synteny").remove();
-      selectAll("svg.scale").remove();
-      select("svg#phylogram").remove();
-      select("div#download-btns").style("visibility", "hidden")
+      d3viz.select("svg#synteny").remove();
+      d3viz.selectAll("svg.scale").remove();
+      d3viz.select("svg#phylogram").remove();
+      d3viz.select("div#download-btns").style("visibility", "hidden")
                               .style("opacity", 0);
-      select("div#" + div_id)
+      d3viz.select("div#" + div_id)
             .style("visibility", "hidden")
             .style("opacity", 0);
-      var legend = document.querySelector("div#legend");
+      var legend = viz.querySelector("div#legend");
       while(legend.lastChild) { legend.lastChild.remove(); }
     if (full_reset){
       try {
         // If there were custom select boxes we must reset previously selected
         // parameters
-        var nUpstream = select("select#nUpstream");
+        var nUpstream = d3viz.select("select#nUpstream");
         nUpstream.selectAll("*").remove();
         nUpstream.append("option")
              .attr("value", 10)
              .attr("disabled", "")
              .attr("selected", "")
              .html("Genes upstream");
-        var nDownstream = select("select#nDownstream");
+        var nDownstream = d3viz.select("select#nDownstream");
         nDownstream.selectAll("*").remove();
         nDownstream.append("option")
              .attr("value", 10)
              .attr("disabled", "")
              .attr("selected", "")
              .html("Genes downstream");
-        var tlevel = select("select#tax-rank");
+        var tlevel = d3viz.select("select#tax-rank");
         tlevel.selectAll("*").remove();
         tlevel.append("option")
              .attr("value", "superkingdom")
              .attr("disabled", "")
              .attr("selected", "")
              .html("Taxonomic rank");
-        var enot = select("select#notation");
+        var enot = d3viz.select("select#notation");
         enot.selectAll("*").remove();
         enot.append("option")
             .attr("value", "KEGG")
@@ -432,7 +428,7 @@ export function erase_graph(div_id : string, full_reset : boolean) : void {
         enot.append("option")
             .attr("value", "GMGFam")
             .html("GMGFam");
-        var ephy = select("select#egg-level");
+        var ephy = d3viz.select("select#egg-level");
         ephy.attr("disabled", "");
         ephy.selectAll("*").remove();
         ephy.append("option")
@@ -442,12 +438,12 @@ export function erase_graph(div_id : string, full_reset : boolean) : void {
             .html("eggNOG tax-level");
 
         // Remove previously created custom select boxes for re-rendering
-        var select_boxes = document.querySelectorAll("div.select-selected");
+        var select_boxes = viz.querySelectorAll("div.select-selected");
         select_boxes.forEach(box => box.remove());
-        var select_options = document.querySelectorAll("div.select-items");
+        var select_options = viz.querySelectorAll("div.select-items");
         select_options.forEach(opt => opt.remove());
       } catch(e){}
-      select("div#submit-params")
+      d3viz.select("div#submit-params")
             .style("visibility", "hidden")
             .style("opacity", 0);
     }
@@ -565,17 +561,21 @@ function get_arrow(rect : Rect,
 }
 
 
-function legend_listeners(notation : string,
+function legend_listeners(selector : string,
+                        notation : string,
                         ids : string[],
                         highlight : "stroke" | "circle") {
+
+    const viz : HTMLElement = document.querySelector(selector);
+    const d3viz: d3.Selection<HTMLElement> = select(selector);
     var mouseover = function () {
         ids.forEach((i : string) => {
             if (i != "") {
                 if (notation == "KEGG") {
-                    var legend_name = document.querySelectorAll("div#id"+
+                    var legend_name = viz.querySelectorAll("div#id"+
                                         i.replace("@", "")+">div>a");
                 } else {
-                    var legend_name = document.querySelectorAll("div#id"+
+                    var legend_name = viz.querySelectorAll("div#id"+
                                         i.replace("@", "")+">div>em");
                 }
 
@@ -591,10 +591,10 @@ function legend_listeners(notation : string,
         ids.forEach((i : string) => {
             if (i != "") {
                 if (notation == "KEGG") {
-                    var legend_name = document.querySelectorAll("div#id"+
+                    var legend_name = viz.querySelectorAll("div#id"+
                                         i.replace("@", "")+">div>a");
                 } else {
-                    var legend_name = document.querySelectorAll("div#id"+
+                    var legend_name = viz.querySelectorAll("div#id"+
                                         i.replace("@", "")+">div>em");
                 }
 
@@ -609,7 +609,7 @@ function legend_listeners(notation : string,
     // Legend event listeners
     ids.forEach((i : string) => {
         if (i != "") {
-            document.querySelectorAll("div#id"+i.replace("@", ""))
+            viz.querySelectorAll("div#id"+i.replace("@", ""))
                 .forEach(d => {
                     var t = d.querySelector("em")
                     if (notation == "KEGG") {
@@ -617,10 +617,10 @@ function legend_listeners(notation : string,
                     }
                     d.addEventListener("mouseover", () => {
                         if (highlight == "stroke") {
-                            selectAll("path.stroke." + d.getAttribute("id"))
+                            d3viz.selectAll("path.stroke." + d.getAttribute("id"))
                                     .style("opacity", 1);
                         } else if (highlight == "circle") {
-                            selectAll("circle#" + d.getAttribute("id"))
+                            d3viz.selectAll("circle#" + d.getAttribute("id"))
                                     .style("stroke", "black")
                                     .style("stroke-width", "2px");
                         }
@@ -628,10 +628,10 @@ function legend_listeners(notation : string,
                     });
                     d.addEventListener("mouseleave", () => {
                         if (highlight == "stroke") {
-                            selectAll("path.stroke." + d.getAttribute("id"))
+                            d3viz.selectAll("path.stroke." + d.getAttribute("id"))
                                     .style("opacity", 0);
                         } else if (highlight == "circle") {
-                            selectAll("circle#" + d.getAttribute("id"))
+                            d3viz.selectAll("circle#" + d.getAttribute("id"))
                                     .style("stroke", "none");
                         }
                         t.setAttribute("style", "color: default");
@@ -671,24 +671,27 @@ function draw_genomic_path(g : d3.Selection<SVGElement>,
  * @param {string[]} ids
  */
 
-function gene_hover(central_gene : string, 
+function gene_hover(selector: string,
+                    central_gene : string, 
                     notation : string,
                     nside : number,
                     abcissa : number,
                     ids : string[],
-                    unigene_path : d3.Selection<SVGPathElement>,
+                    gene_path : d3.Selection<HTMLElement>,
                     rectangles : any[], 
                     text : any,
                     arrow : any){
 
-    var { mouseover, mouseleave } = legend_listeners(notation, ids, "stroke");
+    const d3viz: d3.Selection<HTMLElement> = select(selector);
+
+    var { mouseover, mouseleave } = legend_listeners(selector, notation, ids, "stroke");
     // Stroke rationale
     var over_gene = function () {
-        select("path#" + select(this).attr("id") + ".stroke")
+        d3viz.select("path#" + select(this).attr("id") + ".stroke")
           .style("opacity", 1);
-        select("text#" + select(this).attr("id") + ".notation")
+        d3viz.select("text#" + select(this).attr("id") + ".notation")
           .style("fill", "var(--black)");
-        var leaf = select("g#uni" + central_gene);
+        var leaf = d3viz.select("g#g" + clean_string(central_gene));
         leaf.select("circle")
           .style("stroke", "#ff8c00")
           .style("fill", "#ff8c00")
@@ -698,16 +701,16 @@ function gene_hover(central_gene : string,
             .style("fill", "#ff8c00")
             .style("transition", "fill 0.3s");
         if (abcissa == nside) {
-            unigene_path.style("visibility", "visible").style("opacity", 1);
+            gene_path.style("visibility", "visible").style("opacity", 1);
         }
         mouseover();
     };
       var leave_gene = function () {
-        select("path#" + select(this).attr("id") + ".stroke")
+        d3viz.select("path#" + select(this).attr("id") + ".stroke")
          .style("opacity", 0);
-        select("text#" + select(this).attr("id") + ".notation")
+        d3viz.select("text#" + select(this).attr("id") + ".notation")
           .style("fill", "var(--sand)");
-        var leaf = select("g#uni" + central_gene);
+        var leaf = d3viz.select("g#g" + clean_string(central_gene));
         leaf.select("circle")
           .style("stroke", "#663399")
           .style("fill", "#9370db")
@@ -717,7 +720,7 @@ function gene_hover(central_gene : string,
             .style("fill", "var(--dark-gray)")
             .style("transition", "fill 0.3s");
         if (abcissa == nside) {
-            unigene_path.style("visibility", "hidden").style("opacity", 0);
+            gene_path.style("visibility", "hidden").style("opacity", 0);
         }
         mouseleave();
     };
@@ -736,65 +739,70 @@ function gene_hover(central_gene : string,
 }
 
 
-function tree_hover(central_gene : string,
-                    unigene_path : d3.Selection<SVGPathElement>) {
-    var unigene_leaf : 
-        d3.Selection<HTMLElement> = select("g#uni" + central_gene);
-    if (unigene_leaf){
-        let highlight_uni = function(unigene_leaf : d3.Selection<HTMLElement>,
-                                     unigene_path : d3.Selection<SVGPathElement>) {
-            unigene_leaf.select("circle")
+function tree_hover(selector : string, 
+                    central_gene : string,
+                    gene_path : d3.Selection<HTMLElement>) {
+
+    const viz : HTMLElement = document.querySelector(selector);
+    const d3viz: d3.Selection<HTMLElement> = select(selector);
+    var gene_leaf : 
+        d3.Selection<HTMLElement> = d3viz.select("g#g" + clean_string(central_gene));
+    if (gene_leaf){
+        let highlight_uni = function(gene_leaf : d3.Selection<HTMLElement>,
+                                     gene_path : d3.Selection<HTMLElement>) {
+            gene_leaf.select("circle")
               .style("stroke", "#ff8c00")
               .style("fill", "#ff8c00")
               .style("transition", "stroke 0.3s")
               .style("transition", "fill 0.3s");
-            unigene_leaf.select("text")
+            gene_leaf.select("text")
                 .style("fill", "#ff8c00")
                 .style("transition", "fill 0.3s");
-            unigene_path.style("visibility", "visible").style("opacity", 1);
+            gene_path.style("visibility", "visible").style("opacity", 1);
 
         }
-        let hide_uni = function(unigene_leaf : d3.Selection<HTMLElement>,
-                                unigene_path : d3.Selection<SVGPathElement>) {
-            unigene_leaf.select("circle")
+        let hide_uni = function(gene_leaf : d3.Selection<HTMLElement>,
+                                gene_path : d3.Selection<HTMLElement>) {
+            gene_leaf.select("circle")
               .style("stroke", "#663399")
               .style("fill", "#9370db")
               .style("transition", "stroke 0.3s")
               .style("transition", "fill 0.3s");
-            unigene_leaf.select("text")
+            gene_leaf.select("text")
                 .style("fill", "var(--dark-gray)")
                 .style("transition", "fill 0.3s");
-            unigene_path.style("visibility", "hidden").style("opacity", 0);
+            gene_path.style("visibility", "hidden").style("opacity", 0);
         }
-        unigene_leaf.on("mouseover", () => {
-                highlight_uni(unigene_leaf, unigene_path);
+        gene_leaf.on("mouseover", () => {
+                highlight_uni(gene_leaf, gene_path);
             });
-        unigene_leaf.on("mouseleave", () => {
-                hide_uni(unigene_leaf, unigene_path);
+        gene_leaf.on("mouseleave", () => {
+                hide_uni(gene_leaf, gene_path);
             })
-        var inner_clades : any = document
-                              .querySelectorAll("circle.c" + central_gene);
+        var inner_clades : any = viz
+                              .querySelectorAll("circle.g" + clean_string(central_gene));
         inner_clades.forEach((clade : HTMLElement) => {
             clade.addEventListener("mouseover", () => {
                 clade.setAttribute("stroke", "#ff8c00");
                 clade.setAttribute("fill", "#ff8c00");
-                unigene_path.style("visibility", "visible")
+                gene_path.style("visibility", "visible")
                             .style("opacity", 1);
-                highlight_uni(unigene_leaf, unigene_path);
+                highlight_uni(gene_leaf, gene_path);
             })
             clade.addEventListener("mouseleave", () => {
-                clade.setAttribute("stroke", "#5d5d5d");
-                clade.setAttribute("fill", "#5d5d5d");
-                unigene_path.style("visibility", "visible")
+                clade.setAttribute("stroke", "var(--dark-gray)");
+                clade.setAttribute("fill", "var(--dark-gray)");
+                gene_path.style("visibility", "visible")
                             .style("opacity", 0);
-                hide_uni(unigene_leaf, unigene_path);
+                hide_uni(gene_leaf, gene_path);
             })
         })
     }
 }
 
 
-function draw_neighbor(g : d3.Selection<SVGElement>,
+function draw_neighbor(selector : string,
+                       g : d3.Selection<HTMLElement>,
                        pos : number,
                        neigh : Gene,
                        d : Gene,
@@ -808,7 +816,7 @@ function draw_neighbor(g : d3.Selection<SVGElement>,
                        gene_rect : Rect,
                        sizeScale : scale.linear,
                        fn_palette : scale.ordinal,
-                       unigene_path : d3.Selection<SVGPathElement>,
+                       gene_path : d3.Selection<HTMLElement>,
                        fields : {[index:string]:Field},
                        options : OptionSet,
                        identifier_getter : 
@@ -847,6 +855,11 @@ function draw_neighbor(g : d3.Selection<SVGElement>,
 
         } else {
             x0 = abcissa * rect.w + Math.abs(rect.w/2 - gene_rect.w/2);
+            if (neigh.strand == "+") {
+                x0 -= rect.ph / 5;
+            } else {
+                x0 += rect.ph / 5;
+            }
         }
         if (pos == 0 && fields.n) {
             let n = d.neighborhood.n || neigh.n_contig || " ";
@@ -858,7 +871,7 @@ function draw_neighbor(g : d3.Selection<SVGElement>,
 
         // Only render genes present and within nside
         if ((<any>Object).keys(neigh).length > 1 &&
-            neigh.unigene != "NA"){
+            neigh.gene != "NA"){
             var identifiers = identifier_getter(neigh, notation, taxlevel);
 
             // Fill
@@ -918,7 +931,7 @@ function draw_neighbor(g : d3.Selection<SVGElement>,
               .attr("id", "idx" + counter);
 
             // Add hoverable stroke that sorrounds gene arrow
-            let central_gene : string = d.neighborhood[0].unigene
+            let central_gene : string = d.neighborhood[0].gene
              g.append("path")
               .attr("class", "stroke" + id_string + " ord" + central_gene)
               .attr("id", "idx" + counter)
@@ -969,12 +982,13 @@ function draw_neighbor(g : d3.Selection<SVGElement>,
             }
 
             // Hover effect over gene representation
-            gene_hover(central_gene, 
+            gene_hover(selector,
+                        central_gene, 
                         notation,
                         nside.upstream,
                         abcissa,
                         identifiers_ks,
-                        unigene_path,
+                        gene_path,
                         rectangles,
                         text,
                         arrow);
@@ -989,7 +1003,8 @@ function draw_neighbor(g : d3.Selection<SVGElement>,
                             ordinate + gene_rect.h * d.y + d.circle.r,
                             d.palette(id),
                             "id"+id)
-                    let { mouseover, mouseleave } = legend_listeners(f,
+                    let { mouseover, mouseleave } = legend_listeners(selector,
+                                                                    f,
                                                                     [id], 
                                                                     d.rep)
                     c.on("mouseover", () => {
@@ -1035,106 +1050,6 @@ function draw_neighbor(g : d3.Selection<SVGElement>,
 }
 
 
-function get_parameters() {
-
-    // Manage notation input
-    var enot : HTMLFormElement = document.querySelector("select#notation");
-    var notation : string = enot.options[enot.selectedIndex].value;
-    // Manage number of genes to display on sides
-    var eups : HTMLFormElement = document.querySelector("select#nUpstream");
-    var nups : number = +eups.options[eups.selectedIndex].value;
-    // Manage number of genes to display on sides
-    var edowns : HTMLFormElement = document.querySelector("select#nDownstream");
-    var ndowns : number = +edowns.options[edowns.selectedIndex].value;
-    // Manage eggNOG taxonomic levels
-    var ephy : HTMLFormElement = document.querySelector("select#egg-level")
-    var taxlevel : (number|string) = +ephy.options[ephy.selectedIndex].value;
-
-    // Add additional fields to represent
-    var fields : {[index:string] : Field} = {};
-    // Manage taxonomic prediction levels
-    var etax : HTMLFormElement = document.querySelector("select#tax-rank")
-    var tpred_level : string = etax.options[etax.selectedIndex].value;
-
-    var taxChecked : boolean = $("input#tax-rank").is(":checked");
-    // Show phylogram
-    var showTree : boolean = $("input#showTree").is(":checked");
-    // Show gene preferred name
-    var showName : boolean = $("input#geneName").is(":checked");
-    // Show gene preferred name
-    var nContig : boolean = $("input#nContig").is(":checked");
-    // Scale gene length?
-    var scaleSize : boolean = $("input#scaleSize").is(":checked");
-    // Show genomic position of gene
-    var showPos : boolean = $("input#showPos").is(":checked");
-    // Highlight anchor gene
-    var highlightAnchor : boolean = $("input#highlightAnchor").is(":checked");
-
-
-    var edist : HTMLFormElement = document.querySelector("select#distScale");
-    var distScale : string = edist.options[edist.selectedIndex].value;
-    
-    var customScale : number = +(<HTMLInputElement>document.querySelector("input#customScale")).value;
-
-    var options : OptionSet = {
-        "showTree" : showTree,
-        "showName" : showName,
-        "collapseDist" : distScale == "collapseDist",
-        "scaleDist" : distScale == "scaleDist",
-        "scaleSize" : scaleSize,
-        "customScale" : customScale,
-        "nContig" : nContig,
-        "highlightAnchor" : highlightAnchor
-    }
-
-    if (showPos) {
-        fields["showPos"] = {
-            rep : "text",
-            y : +Object.keys(fields).length + 1
-        }
-    }
-    if (nContig) {
-        fields["n"] = {
-            rep : "text",
-            text: "",
-            y : +Object.keys(fields).length + 1
-        }
-    } 
-
-    if (taxChecked) {
-        fields["tax_prediction"] = {
-            rep : "circle",
-            circle : {
-                r : 7
-            },
-            level : tpred_level,
-            legend : {
-                div : "tax-pred",
-                title : "Taxonomic prediction (" + tpred_level + ")"
-            },
-            y : +Object.keys(fields).length + 1
-        }
-    } else {
-        try { delete fields["tax_prediction"] } catch {};
-    }
-
-    if (options.scaleDist) {
-        options.scaleSize = true;
-        select("input#scaleSize").attr("checked", "");
-        options.highlightAnchor = true;
-        select("input#highlightAnchor").attr("checked", "");
-    }
-
-    return {
-        notation: notation,
-        nside: {upstream: nups, downstream: ndowns},
-        taxlevel: taxlevel,
-        tpred_level: tpred_level,
-        fields: fields,
-        options: options
-    }
-}
-
 
 /**
  * Draw genomic context from specified JSON data
@@ -1154,13 +1069,14 @@ function get_parameters() {
  * @param {number} context_width: width of genomic context graph
  *                                (legend excluded)
  * @param {TreeNode} newick: (optional) phylogenetic tree in Newick format.
- * @param {string} colors_file: path to file containing colors in array format
+ * @param {string[]} colors: array with colors in hex
  * @param {function} identifier_getter: (optional) custom function to retrieve
  *                                      "identifier data" which will be used
  *                                      to color the different genes
  *                                      Params: gene, notation, taxlevel
  */
-export async function draw_genomic_context(div_id : string,
+export async function draw_genomic_context(selector : string,
+                                            div_id : string,
                                             data : {[index:string]:Gene},
                                             notation : string,
                                             taxlevel : (number|string),
@@ -1169,7 +1085,7 @@ export async function draw_genomic_context(div_id : string,
                                             nenv : number,
                                             fields : {[index:string]:Field},
                                             options : OptionSet,
-                                            colors_file : string,
+                                            colors : string[],
                                             newick? : TreeNode,
                                             context_width? : number,
                                             identifier_getter : 
@@ -1178,50 +1094,48 @@ export async function draw_genomic_context(div_id : string,
                                                 taxlevel:(number|string)
                                             ) => object = get_identifiers) {
 
+    const viz : HTMLElement = document.querySelector(selector);
+    const d3viz: d3.Selection<HTMLElement> = select(selector);
+
     // Reset graph div
-    erase_graph(div_id, false);
-    var width : number = context_width || Math.max(window.innerWidth - 1200, 1000);
+    erase_graph(selector, div_id, false);
+    var parentWidth : number = $(selector).width() - 5;
+    var width : number = context_width || Math.max(parentWidth - 1050, 700);
     var nfield : number = Object.keys(fields).length + 1 || 1;
     if (options.showTree) {
         try {
-            select("div#phylogram").style("display", "inline-block");
-            var n_unigenes = (<any>Object).keys(data).length;
-            await draw_newick(newick,
+           d3viz.select("div#phylogram").style("display", "inline-block");
+            var n_genes = (<any>Object).keys(data).length;
+            await draw_newick(selector,
+                              newick,
                               nfield,
-                              n_unigenes);
+                              n_genes);
         } catch {
-            width = context_width || Math.max(window.innerWidth - 500, 1000);
-            select("input#showTree").attr("checked", null);
-            select("div#phylogram").style("display", "none");
+            width = context_width || Math.max(parentWidth - 350, 700);
+            d3viz.select("input#showTree").attr("checked", null);
+            d3viz.select("div#phylogram").style("display", "none");
         }
     } else {
-            width = context_width || Math.max(window.innerWidth - 500, 1000);
-            select("div#phylogram").style("display", "none");
+            width = context_width || Math.max(parentWidth - 350, 700);
+            d3viz.select("div#phylogram").style("display", "none");
     }
 
     // Gene representation dimensions and svg margins
     const margin = { top: 5, right: 5, bottom: 10, left: 10 };
     // Width of stripped arrow (rectangular portion)
     const gene_rect : Rect = { w: (width - margin.right) / (nside.upstream + nside.downstream + 1),
-                               h: 20, 
+                               h: 17, 
                                ph: 20, 
                                pv: 5 };
     const rect : Rect = { w: (width - margin.right) / (nside.upstream + nside.downstream + 1),
-                          h: 20, 
+                          h: 17, 
                           ph: 20, 
                           pv: 5 };
 
-    select("div#phylogram").style("height", window.innerHeight + "px");
-    // Create color palette
-    // 34 differentiable colors
-    var colors : string[] = []
-    await fetch(colors_file)
-        .then(response => response.text())
-        .then(hex => colors = eval(hex))
-
+    d3viz.select("div#phylogram").style("height", window.innerHeight + "px");
     // LEGEND
     var legend_height = (100 / nfield) + "%";
-    var legend = select("div#legend");
+    var legend = d3viz.select("div#legend");
     var unique_functions = get_unique_functions(data, notation, taxlevel, nside);
     var fn_palette = scale.ordinal()
                     .domain((<any>Object).keys(unique_functions))
@@ -1230,7 +1144,8 @@ export async function draw_genomic_context(div_id : string,
         .attr("class", "split-legend")
         .attr("id","legend-fn")
         .style("height", legend_height);
-    draw_legend("legend-fn", 
+    draw_legend(selector,
+                "legend-fn", 
                 notation,
                 unique_functions, 
                 fn_palette, 
@@ -1247,7 +1162,8 @@ export async function draw_genomic_context(div_id : string,
                 .attr("class", "split-legend")
                 .attr("id", d.legend.div)
                 .style("height", legend_height);
-            draw_legend(d.legend.div, 
+            draw_legend(selector,
+                        d.legend.div, 
                         d.legend.title,
                         unique, 
                         palette, 
@@ -1281,7 +1197,7 @@ export async function draw_genomic_context(div_id : string,
     }
 
   // Generate graph
-  var svg = select("div#synteny")
+  var svg = d3viz.select("div#synteny")
     .append("svg")
     .attr("id", "synteny")
     .attr("width", width)
@@ -1292,7 +1208,7 @@ export async function draw_genomic_context(div_id : string,
     .append("g")
     .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    var scale_svg = select("div#synteny")
+    var scale_svg = d3viz.select("div#synteny")
                  .append("svg")
                  .attr("class", "scale")
                  .append("g");
@@ -1306,14 +1222,14 @@ export async function draw_genomic_context(div_id : string,
         "sup" : 0
     }
 
-    // Visit every unigene entry and their neighbors to
+    // Visit every gene entry and their neighbors to
     // render synteny visualization
     await (<any>Object).entries(data).forEach(([central_gene, d] : [string, Gene]) => {
 
 
-        //let central_gene : string = d.unigene; //central;
+        //let central_gene : string = d.gene; //central;
         // y coordinate
-        var ordinate = get_ordinate(central_gene, central_pos, rect, nfield);
+        var ordinate = get_ordinate(viz, central_gene, central_pos, rect, nfield);
         largest_ordinate = Math.max(largest_ordinate, ordinate);
         central_pos++;
 
@@ -1355,7 +1271,7 @@ export async function draw_genomic_context(div_id : string,
         }
 
         // Render neighbor-selection rectangle upon hover
-        var unigene_path = g.append("path")
+        var gene_path = g.append("path")
                             .attr("class", "archoring-path")
                             .attr("id", "uni" + central_gene)
                             .attr("d",
@@ -1378,7 +1294,7 @@ export async function draw_genomic_context(div_id : string,
                             .style("transition", "opacity 0.3s");
 
         // Tree clades and leafs hover rationale
-        tree_hover(central_gene, unigene_path);
+        tree_hover(selector, central_gene, gene_path);
 
         //if (fields.showPos) {
             //draw_genomic_path(g, 
@@ -1403,7 +1319,7 @@ export async function draw_genomic_context(div_id : string,
             var xf : number;
             var x0 : number;
             
-            if (neigh && neigh.unigene != "NA") {
+            if (neigh && neigh.gene != "NA") {
                 if (options.scaleDist || options.collapseDist) {
                     let distance : number;
                     if (options.scaleDist) {
@@ -1427,7 +1343,8 @@ export async function draw_genomic_context(div_id : string,
                     x0 = undefined;
                 }
 
-                xf  = draw_neighbor(g,
+                xf  = draw_neighbor(selector,
+                               g,
                                pos,
                                neigh,
                                d,
@@ -1441,7 +1358,7 @@ export async function draw_genomic_context(div_id : string,
                                gene_rect,
                                sizeScale,
                                fn_palette,
-                               unigene_path,
+                               gene_path,
                                fields,
                                options,
                                identifier_getter,
@@ -1462,7 +1379,7 @@ export async function draw_genomic_context(div_id : string,
             var xf : number;
             var x0 : number;
 
-            if (neigh && neigh.unigene != "NA") {
+            if (neigh && neigh.gene != "NA") {
                 if (options.scaleDist || options.collapseDist) {
                     let distance : number;
                     if (options.scaleDist) {
@@ -1478,7 +1395,8 @@ export async function draw_genomic_context(div_id : string,
                 } else {
                     x0 = undefined;
                 }
-                xf = draw_neighbor(g,
+                xf = draw_neighbor(selector,
+                               g,
                                pos,
                                neigh,
                                d,
@@ -1492,7 +1410,7 @@ export async function draw_genomic_context(div_id : string,
                                gene_rect,
                                sizeScale,
                                fn_palette,
-                               unigene_path,
+                               gene_path,
                                fields,
                                options,
                                identifier_getter,
@@ -1511,19 +1429,19 @@ export async function draw_genomic_context(div_id : string,
 
 
     if (!(
-        (options.collapseDist && options.scaleSize) || 
+        options.collapseDist || 
         options.scaleDist
     )) {
         //Anchor path
         g.append("path")
             .attr("class", "archoring-path")
             .attr("d",
-                    "M" + (nside.upstream * rect.w - rect.ph/3) + " 10 " +
-                    "L " + (nside.upstream * rect.w - rect.ph/3) + " " +
+                    "M" + (nside.upstream * rect.w - 2*rect.ph/5) + " 10 " +
+                    "L " + (nside.upstream * rect.w - 2*rect.ph/5) + " " +
                             (largest_ordinate + rect.h*nfield + 2) + " "+
-                    "L " + ((nside.upstream+1)*rect.w - rect.ph/2)  + " " +
+                    "L " + ((nside.upstream+1)*rect.w - 7*rect.ph/10)  + " " +
                             (largest_ordinate + rect.h*nfield + 2) + " "+
-                    "L " + ((nside.upstream+1)*rect.w - rect.ph/2) + " 10 " +
+                    "L " + ((nside.upstream+1)*rect.w - 7*rect.ph/10) + " 10 " +
                     "Z")
             .style("fill", "none")
             .style("stroke", "var(--dark-gray)");
@@ -1531,7 +1449,7 @@ export async function draw_genomic_context(div_id : string,
     }
 
     var y = largest_ordinate + rect.h*nfield + 65;
-    var geco = select("svg#synteny")
+    var geco = d3viz.select("svg#synteny")
     if (options.scaleDist) {
         var svgWidth = boundX.sup - boundX.inf;
         geco.attr("width", svgWidth + margin.left);
@@ -1550,17 +1468,17 @@ export async function draw_genomic_context(div_id : string,
     if (options.scaleDist || options.scaleSize) {
         draw_scale(scale_svg, distScale, 0,  0, "bp")
     }
-    select("div#synteny").style("height", y + 3 + "px");
+    d3viz.select("div#synteny").style("height", y + 3 + "px");
     geco.attr("height", y - 40);
-    select("div#phylogram").style("height", y + 3 + "px");
-    select("svg#phylogram").attr("height", y - 40);
+    d3viz.select("div#phylogram").style("height", y + 3 + "px");
+    d3viz.select("svg#phylogram").attr("height", y - 40);
 
 };
 
 
 /**
  * Render complete genomic context graph with optional phylogenetic tree
- * @function render_graph
+ * @function visualize_geco
  * @param {string} div_id: id of div which will contain the graph.
  *                         Default: "graph" <div id="graph"></div>
  * @param {JSON object} data: genomic context information as JSON object
@@ -1568,36 +1486,45 @@ export async function draw_genomic_context(div_id : string,
  * @param {number} nenv: maximum number of genes in neighborhood
  *                       (central gene included)
  */
-export async function render_graph(div_id : string ="graph",
+export async function visualize_geco(selector : string,
                                     data : {[index:string]:Gene},
+                                    newick : TreeNode, 
                                     nenv : number,
-                                    colors_file : string,
-                                    newick : TreeNode){
+                                    colors : string[],
+                                    parameters : ParamSet){
+
+    const viz : HTMLElement = document.querySelector(selector);
+    const d3viz: d3.Selection<HTMLElement> = select(selector);
+    var div_id : string = "graph";
 
     var { notation, 
           nside, 
           taxlevel,
           tpred_level,
           fields,
-          options } = get_parameters();
+          options } = parameters;
 
-    select("div#download-btns").style("visibility", "hidden")
+    d3viz.select("div#download-btns").style("visibility", "hidden")
                           .style("opacity", 0);
-    select("div#"+div_id).style("visibility", "hidden")
+    d3viz.select("div#"+div_id).style("visibility", "hidden")
                           .style("opacity", 0);
     // Download buttons
-    create_download_button('download-tree',
+    create_download_button(selector,
+                           'download-tree',
                            'newick.png',
                            'div#phylogram');
-    create_download_button('download-json',
+    create_download_button(selector,
+                           'download-json',
                            'genomic_context.json',
                            undefined,
                            data);
-    create_download_button('download-context',
+    create_download_button(selector,
+                           'download-context',
                            'genomic_context.png',
                            "#" + div_id);
     // Generate graph
-    await draw_genomic_context(div_id,
+    await draw_genomic_context(selector,
+                               div_id,
                                data,
                                notation,
                                taxlevel,
@@ -1606,16 +1533,15 @@ export async function render_graph(div_id : string ="graph",
                                +nenv,
                                fields,
                                options,
-                               colors_file,
+                               colors,
                                newick);
-    document.querySelector("div#submit-params").scrollIntoView({behavior: "smooth"});
-    select("div#download-btns").style("visibility", "visible")
+    viz.querySelector("div#submit-params").scrollIntoView({behavior: "smooth"});
+    d3viz.select("div#download-btns").style("visibility", "visible")
                           .style("opacity", 1);
-    select("div#"+div_id).style("visibility", "visible")
+    d3viz.select("div#"+div_id).style("visibility", "visible")
                             .style("opacity", 1);
     try {
 
-        document.querySelector("path.anchor-stroke").scrollIntoView({behavior: "smooth", block: "nearest", inline: "center"});
+        viz.querySelector("path.anchor-stroke").scrollIntoView({behavior: "smooth", block: "nearest", inline: "center"});
     } catch {}
-    //}
 }

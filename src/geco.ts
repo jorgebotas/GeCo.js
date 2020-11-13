@@ -4,7 +4,7 @@ import { select } from 'd3';
 import { get_levels,
          erase_graph,
          create_download_button,
-         render_graph } from './g-context';
+         visualize_geco } from './g-context';
 
 import parseNewick from './newick';
 
@@ -12,97 +12,123 @@ import { popper_click } from './popper';
 
 import { select_box } from './select_box';
 
-import { TreeNode } from './interfaces';
-
-const nenv : number = 41;
-
-var query_cluster : string;
-var data : any;
-var newick : TreeNode;
+import { Gene, ParamSet, OptionSet, Field, TreeNode } from './interfaces';
 
 
+function get_parameters(selector : string) : ParamSet {
+    const viz : HTMLElement = document.querySelector(selector);
+    const d3viz: d3.Selection<HTMLElement> = select(selector);
+    // Manage notation input
+    var enot : HTMLFormElement = viz.querySelector("select#notation");
+    var notation : string = enot.options[enot.selectedIndex].value;
+    // Manage number of genes to display on sides
+    var eups : HTMLFormElement = viz.querySelector("select#nUpstream");
+    var nups : number = +eups.options[eups.selectedIndex].value;
+    // Manage number of genes to display on sides
+    var edowns : HTMLFormElement = viz.querySelector("select#nDownstream");
+    var ndowns : number = +edowns.options[edowns.selectedIndex].value;
+    // Manage eggNOG taxonomic levels
+    var ephy : HTMLFormElement = viz.querySelector("select#egg-level")
+    var taxlevel : (number|string) = +ephy.options[ephy.selectedIndex].value;
 
-async function get_data(isCluster : boolean,
-                        cutoff : string|number,
-                        url? : string) {
-    var url_root : string = "/getcontext/";
-    if (isCluster) {
-        url_root += "cluster/";
-    } else {
-        url_root += "unigene/"
+    // Add additional fields to represent
+    var fields : {[index:string] : Field} = {};
+    // Manage taxonomic prediction levels
+    var etax : HTMLFormElement = viz.querySelector("select#tax-rank")
+    var tpred_level : string = etax.options[etax.selectedIndex].value;
+
+    var taxChecked : boolean = $("input#tax-rank").is(":checked");
+    // Show phylogram
+    var showTree : boolean = $("input#showTree").is(":checked");
+    // Show gene preferred name
+    var showName : boolean = $("input#geneName").is(":checked");
+    // Show gene preferred name
+    var nContig : boolean = $("input#nContig").is(":checked");
+    // Scale gene length?
+    var scaleSize : boolean = $("input#scaleSize").is(":checked");
+    // Show genomic position of gene
+    var showPos : boolean = $("input#showPos").is(":checked");
+    // Highlight anchor gene
+    var highlightAnchor : boolean = $("input#highlightAnchor").is(":checked");
+
+
+    var edist : HTMLFormElement = viz.querySelector("select#distScale");
+    var distScale : string = edist.options[edist.selectedIndex].value;
+    
+    var customScale : number = +(<HTMLInputElement>viz.querySelector("input#customScale")).value;
+
+    var options : OptionSet = {
+        "showTree" : showTree,
+        "showName" : showName,
+        "collapseDist" : distScale == "collapseDist",
+        "scaleDist" : distScale == "scaleDist",
+        "scaleSize" : scaleSize,
+        "customScale" : customScale,
+        "nContig" : nContig,
+        "highlightAnchor" : highlightAnchor
     }
 
-    let data : any;
-    var url_path : string;
-    if (url) {
-        url_path = url;
-    } else {
-        url_path  = url_root + query_cluster + "/" + cutoff;
+    if (showPos) {
+        fields["showPos"] = {
+            rep : "text",
+            y : +Object.keys(fields).length + 1
+        }
     }
-    $('.loader').show();
-    data = await $.ajax({
-      url: url_path,
-      complete: function(){
-        $('.loader').hide();
-      },
-      error: function() {
-          $('.loader').hide();
-          alert("Incorrect cluster identifier")
-      }
-    })
+    if (nContig) {
+        fields["n"] = {
+            rep : "text",
+            text: "",
+            y : +Object.keys(fields).length + 1
+        }
+    } 
 
-        //data = await JSON.parse(data);
-    return data;
+    if (taxChecked) {
+        fields["tax_prediction"] = {
+            rep : "circle",
+            circle : {
+                r : 7
+            },
+            level : tpred_level,
+            legend : {
+                div : "tax-pred",
+                title : "Taxonomic prediction (" + tpred_level + ")"
+            },
+            y : +Object.keys(fields).length + 1
+        }
+    } else {
+        try { delete fields["tax_prediction"] } catch {};
+    }
+
+    if (options.scaleDist) {
+        options.scaleSize = true;
+        d3viz.select("input#scaleSize").attr("checked", "");
+    }
+    if (options.scaleDist || options.collapseDist) {
+        options.highlightAnchor = true;
+        d3viz.select("input#highlightAnchor").attr("checked", "");
+
+    }
+
+    return {
+        notation: notation,
+        nside: {upstream: nups, downstream: ndowns},
+        taxlevel: taxlevel,
+        tpred_level: tpred_level,
+        fields: fields,
+        options: options
+    }
 }
 
 
-async function get_newick(url : string) {
-
-    var newick_raw = await $.ajax({
-      url: url,
-      error: function() {
-          console.log("No tree found")
-      }
-    })
-
-    return parseNewick(newick_raw)
-}
-
-
-async function launch_analysis(isCluster=true, 
-                               cutoff=30,
-                               inputfile?: JSON, 
-                               queryList?: string[]) {
-    // Remove previously computed graph
-    erase_graph("graph", true);
-
-    // ASYNC CALL TO MONGO SERVER
-    if(inputfile) {
-        data = inputfile;
-        
-    } else if(queryList){
-        let url = '/getcontext/list/' + queryList.join(",") + "/" + cutoff;
-        data = await get_data(isCluster, cutoff, url);
-
-    } else {
-        data = await get_data(isCluster, cutoff);
-    }
-
-    // Get tree in Newick format
-    try {
-        let newick_url = "/tree/" + query_cluster + "/";
-        newick = await get_newick(newick_url);
-        create_download_button('download-newick',
-                               'newick.txt',
-                               undefined,
-                               undefined,
-                               newick_url);
-    } catch {
-        newick = undefined;
-    }
-
+async function launch_graphication(selector : string,
+                               data : {[index:string]:Gene},
+                               newick : TreeNode, 
+                               nenv: number,
+                               colors : string[]) {
     console.log(data)
-
+    const d3viz: d3.Selection<HTMLElement> = select(selector);
+    // Remove previously computed graph
+    erase_graph(selector, "graph", true);
     // Get eggNOG tax level names for friendlier visualization
     var eggNOG_levels = {}
     try {
@@ -126,51 +152,54 @@ async function launch_analysis(isCluster=true,
                     eggNOG_levels[l]){
                     name += ": " + eggNOG_levels[l];
                 }
-                select("select#egg-level")
+                d3viz.select("select#egg-level")
                   .append("option")
                   .attr("value", l)
                   .html(name);
             }
           })
     } catch {
-        select("select#egg-level").style("display", " none");
+        d3viz.select("select#egg-level").style("display", " none");
     }
 
     // Taxonomic levels
     try {
         var tax_ranks = get_levels(data, "tax_prediction")
         tax_ranks.forEach((l : string) => {
-            select("select#tax-rank")
+            d3viz.select("select#tax-rank")
               .append("option")
               .attr("value", l)
               .html(l);
           })
     } catch {
-        select("select#tax-rank").style("display", " none");
+        d3viz.select("select#tax-rank").style("display", " none");
     }
 
     // Display number of genes option
     for (let i = 1; i <= (nenv-1)/2; i++){
-        select("select#nUpstream")
+        d3viz.select("select#nUpstream")
             .append("option")
             .attr("value", i)
             .html(String(i));
-        select("select#nDownstream")
+        d3viz.select("select#nDownstream")
             .append("option")
             .attr("value", i)
             .html(String(i));
     }
       // Render custom select boxes
+    try {
+
       select_box();
-      select("div#submit-params")
+    } catch{}
+      d3viz.select("div#submit-params")
           .style("visibility", "visible")
           .style("opacity", 1);
 
       // Enable taxonomic level selection when eggNOG is selected
-      select(".notation>div>div.select-selected")
+      d3viz.select(".notation>div>div.select-selected")
           .on("click",
             function() {
-                var ephy = select("select#egg-level");
+                var ephy = d3viz.select("select#egg-level");
                 if((<any>this).childNodes[0].data != "eggNOG") {
                         ephy.attr("disabled", "");
                     } else {
@@ -180,78 +209,72 @@ async function launch_analysis(isCluster=true,
       // Enable/disble taxonomic rank with checkbox
       $("input[type='checkbox']#tax-rank").click( () =>  {
           let isChecked = $("input#tax-rank").is(":checked");
-          let tax_rank = select("select#tax-rank");
+          let tax_rank = d3viz.select("select#tax-rank");
           if (isChecked) {
               tax_rank.attr("disabled", null);
           } else {
               tax_rank.attr("disabled", "");
           }
         })
-      await render_graph("graph",
+      let params : ParamSet = get_parameters(selector);
+      await visualize_geco(selector,
                          data,
+                         newick,
                          nenv,
-                         "/static/geco/txt/colors.txt",
-                         newick);
+                         colors,
+                         params);
 }
 
 
-function parameter_listener() {
-
-// Detect when form is submitted and draw graph accordingly
-const form = document.querySelector("form#params");
-form.addEventListener(
-  "submit",
-  function (e) {
-    e.preventDefault();
-    render_graph("graph",
-                        data,
-                        nenv,
-                        "/static/geco/txt/colors.txt",
-                        newick);
-      // "/results/" + query_cluster + "_newick.txt"
-  },
-  false
-);
+function parameter_listener(selector : string, 
+                            data: {[index:string]:Gene},
+                            newick : TreeNode,
+                            nenv : number,
+                            colors : string[]) {
+    const viz : HTMLElement = document.querySelector(selector);
+    // Detect when form is submitted and draw graph accordingly
+    const form = viz.querySelector("form#params");
+    form.addEventListener(
+      "submit",
+      function (e) {
+        e.preventDefault();
+        let params : ParamSet = get_parameters(selector);
+        visualize_geco(selector,
+                            data,
+                            newick,
+                            nenv,
+                            colors,
+                            params);
+      },
+      false
+    );
 };
 
 
-async function main() {
-    //document.querySelector("h1").scrollIntoView(true);
-    parameter_listener();
+export default async function launch_GeCo(selector : string,
+                                          data : {[index:string]:Gene},
+                                          tree : string,
+                                          nenv : number,
+                                          colors : string[]) {
+    var newick : TreeNode;
+    if (tree) {
+        newick = parseNewick(tree);
+    }
+    create_download_button(selector,
+                           'download-newick', 
+                           'newick.nwk',
+                           undefined,
+                           undefined,
+                           undefined,
+                           String(tree));
+    parameter_listener(selector, data, newick, nenv, colors);
     popper_click();
 
-    //var queryString = window.location.search;
-    //var urlParams = new URLSearchParams(queryString);
-    var urlPath = window.location.pathname.split("/");
-
-    var context = urlPath[1]
-    query_cluster = urlPath[2];
-    var cutoff = +urlPath[3];
-
-    if (context == "clustercontext") {
-        await launch_analysis(true, cutoff);
-    } else if (context == "unigenecontext") {
-        await launch_analysis(false, cutoff);
-    } else if (context == "listcontext"){
-        let genelist : string[] = String(urlPath[2]).split(",");
-        await launch_analysis(false,
-                        cutoff,
-                        undefined,
-                        genelist)
-    } else if (context == "filecontext"){
-        let uploaded_url : string = String(urlPath[2]).replaceAll(",", "/");
-        let inputfile : JSON;
-        await fetch(uploaded_url)
-            .then(response => response.text())
-            .then(txt => inputfile = JSON.parse(txt))
-        await launch_analysis(false, 
-                        cutoff, 
-                        inputfile);
-    }
-
-    select('ul.navbar')
-        .style('visibility', 'visible')
-        .style('opacity', 1);
+    await launch_graphication(selector,
+                              data,
+                              newick,
+                              nenv,
+                              colors)
 }
 
-main();
+window.launch_GeCo = launch_GeCo;

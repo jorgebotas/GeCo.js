@@ -6,6 +6,9 @@
   "type": "module",
   "scripts": {
     "build": "parcel build ./src/geco.ts",
+    "build-custom": "parcel build ./src/django_GeCo/custom_geco.ts",
+    "build-gmgfam": "parcel build ./src/django_GeCo/gmgfam_geco.ts",
+    "build-eggnog": "parcel build ./src/django_GeCo/eggnog_geco.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "license": "ISC",

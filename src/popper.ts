@@ -137,9 +137,9 @@ function get_popper_html(pos : number,
      if (neigh.strand) {
          popper_html += "Strand: " + neigh.strand + "<br>";
      }
-    if (neigh.unigene) {
-        popper_html += "<br><strong>Unigene</strong><br>" + 
-                        neigh.unigene + "<br>";
+    if (neigh.gene) {
+        popper_html += "<br><strong>Gene</strong><br>" + 
+                        neigh.gene + "<br>";
     }
     if (pos != 0) {
         if(neigh.frequency) {
@@ -149,9 +149,9 @@ function get_popper_html(pos : number,
     if (neigh.n_contig) {
         popper_html += "Analysed contigs: " + neigh.n_contig + "<br>";
     }
-     if (neigh.unigene) {
-        popper_html += "<a href='/unigenecontext/" + 
-                       neigh.unigene +"' target='_blank'>\
+     if (neigh.gene) {
+        popper_html += "<a href='/genecontext/" + 
+                       neigh.gene +"' target='_blank'>\
                                  Unique contigs</a><br>";
 
      }
@@ -214,6 +214,7 @@ export function create_popper(pos : number,
     var popper = document.querySelector(".popper#idx" + counter);
 
     var rects = document.querySelectorAll("rect#idx" + counter);
+    var paths = document.querySelectorAll("path#idx" + counter);
     var ref_text = document.querySelector("text#idx" + counter);
 
       function create() {
@@ -253,6 +254,7 @@ export function create_popper(pos : number,
 
       showEvents.forEach(function (event) {
         rects.forEach(r => r.addEventListener(event, show));
+        paths.forEach(r => r.addEventListener(event, show));
         ref_text.addEventListener(event, show);
         popper.addEventListener(event, show);
       });

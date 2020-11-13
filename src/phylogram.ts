@@ -4,6 +4,7 @@ import { select,
          scale } from 'd3';
 
 import { TreeNode } from './interfaces';
+import { clean_string } from './helpers';
 
 
 function rightAngleDiagonal () {
@@ -73,15 +74,15 @@ function styleNodes(vis : d3.Selection<HTMLElement>){
 
 
         function get_children_name(node : TreeNode) {
-            let names = []
+            let names = [];
             if (!node.children && node.name) {
-                names.push(node.name);
+                names.push(clean_string(node.name));
             } else {
                 node.children.forEach(c => {
                     names = names.concat(get_children_name(c));
                 })
             }
-            return names
+            return names;
         }
 
     vis.selectAll('g.inner.node')
@@ -94,12 +95,12 @@ function styleNodes(vis : d3.Selection<HTMLElement>){
             .select("circle")
             .attr("class", function(d : TreeNode) {
                 let children = get_children_name(d)
-                children[0] = "c" + children[0]
-            return children.join(" c")
+                children[0] = "g" + children[0]
+            return children.join(" g")
         });
 
       vis.selectAll('g.leaf.node')
-        .attr("id", function(d : TreeNode) { return "uni" + d.name });
+        .attr("id", function(d : TreeNode) { return "g" + clean_string(d.name); });
       vis.selectAll('g.leaf.node')
         .append("svg:text")
         .attr("dx", 13)
@@ -129,11 +130,11 @@ function scaleBranchLengths(nodes : TreeNode[]) {
     var nodeLengths = nodes.map(function(n:TreeNode) { return n.length; });
     var yscale = scale.linear()
         .domain([0, max(nodeLengths)])
-        .range([0, 40]);
+        .range([0, 30]);
     visitPreOrder(nodes[0], function(node:TreeNode) {
-      node.y = 40 * (node.depth + 1);
+      node.y = 30 * (node.depth + 1);
         if (node.length != undefined) {
-          node.dotted = 40 - yscale(node.length);
+          node.dotted = 30 - yscale(node.length);
         } else {
             node.dotted = 0;
         }
@@ -304,7 +305,7 @@ export function buildPhylogram(selector : string,
     nodes.forEach((n : TreeNode) => {
       largest_abcissa = Math.max(largest_abcissa, n.y)
     })
-    select("svg#phylogram")
+    select(selector + " svg#phylogram")
                 .attr("width", largest_abcissa + 150);
     return {tree: tree, vis: vis}
 }

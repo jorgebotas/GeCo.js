@@ -5,17 +5,22 @@ export interface Margin {
     left : number;
 }
 
-
+export interface ParamSet {
+    notation: string;
+    nside : { upstream : number, downstream : number };
+    taxlevel : number | string;
+    tpred_level : string;
+    fields : {[index:string] : Field};
+    options : OptionSet
+}
 export interface OptionSet {
     [index:string] : boolean|number;
 }
-
 
 export interface NSide {
     upstream : number;
     downstream : number;
 }
-
 
 export interface Notation {
     [index : string] : number|string;
@@ -61,7 +66,6 @@ export interface Circle {
     fill? : string;
 }
 
-
 export interface Field {
     rep : "circle"|"text";
     circle? : Circle;
@@ -74,7 +78,6 @@ export interface Field {
     palette? : any;
     y? : number;
 }
-
 
 export interface TreeNode {
     branchset? : TreeNode[];
@@ -91,5 +94,3 @@ export interface TreeNode {
     x? : number;
     y? : number
 }
-
-

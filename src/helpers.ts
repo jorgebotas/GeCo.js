@@ -63,3 +63,12 @@ export function lookForParent(element : HTMLElement,
     }
     return undefined;
 }
+
+export function clean_string(s) {
+    let clean = String(s);
+    let dirt = ".,;:/\'-@<>?()[]{}#%!*|".split("");
+    dirt.forEach((d:string) => {
+        clean = clean.replaceAll(d, "");
+    })
+    return clean;
+}
