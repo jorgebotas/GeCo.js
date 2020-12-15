@@ -173,7 +173,9 @@ function draw_legend(selector : string,
                     .style("margin", "0 auto")
                     .style("font-weight", "bold")
                     .html(title);
-    acheckbox(legend.append("div").style("display", "flex"), 
+    acheckbox(legend.append("div")
+                    .attr("class", "pl-3")
+                    .style("display", "flex"), 
               "Select all", 
               undefined, 
               div_id + "-legend-openAll",
