@@ -189,7 +189,7 @@ async function launch_graphication(selector : string,
       // Render custom select boxes
     try {
 
-      select_box();
+      select_box(selector);
     } catch{}
       d3viz.select("div#submit-params")
           .style("visibility", "visible")

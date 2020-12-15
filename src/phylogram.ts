@@ -29,13 +29,13 @@ function rightAngleDiagonal () {
 }
 
 
-function styleNodes(vis : d3.Selection<HTMLElement>){
+function styleNodes(vis : d3.Selection<HTMLElement>, fields? : string[]){
     // Leaf nodes
     vis.selectAll('g.leaf.node')
       .append("svg:circle")
         .attr("r", 4)
-        .attr('fill', '#9370db')
-        .attr('stroke',  '#663399')
+        .attr('fill', 'var(--purple)')
+        .attr('stroke',  'var(--dark-purple)')
         .attr('stroke-width', '1.5px');
 
     // Root node
@@ -110,6 +110,22 @@ function styleNodes(vis : d3.Selection<HTMLElement>){
         .attr('font-size', '0.9em')
         .attr('fill', 'var(--dark-gray)')
         .text(function(d : TreeNode) { return d.name; });
+    if (fields) {
+        vis.selectAll("g.leaf.node")
+          .attr("data-toggle", "tooltip")
+          .attr("data-placement", "right")
+            .attr("title", function(d : TreeNode)  {
+                let name_split = d.name.split(".");
+                let name = name_split[fields.indexOf("name")];
+                let title = "";
+                name_split.forEach((n,i) => {
+                    if (n != name) {
+                        title += "<p>" + fields[i] + ": " + n + "</p>";
+                    }
+                })
+                return title;
+            })
+    }
 }
 
 
@@ -227,7 +243,8 @@ export function buildPhylogram(selector : string,
                         nodes : any,
                         options : {
                             width : number,
-                            height : number
+                            height : number,
+                            name_fields? : string[],
                         }) {
     var w = +options.width;
     var h = +options.height;

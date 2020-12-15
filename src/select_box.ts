@@ -1,14 +1,15 @@
 /**
  * Rationale under custom select boxes
- * required: div with class='custom-select' and specified width recommended
+ * required: div with class='custom-selectbox' and specified width recommended
  * @function select_box
  */
-export function select_box() : void {
+export function select_box(selector : string) : void {
 
+    var vis = document.querySelector(selector);
     // Select box rationale
     var x, i, j, l, ll, selElmnt, a, b, c;
-    /*look for any elements with the class "custom-select":*/
-    x = document.getElementsByClassName("custom-select");
+    /*look for any elements with the class "custom-selectbox":*/
+    x = vis.getElementsByClassName("custom-selectbox");
     l = x.length;
     for (i = 0; i < l; i++) {
       selElmnt = x[i].getElementsByTagName("select")[0];
@@ -48,7 +49,7 @@ export function select_box() : void {
                   y[k].removeAttribute("class");
                 }
                 this.setAttribute("class", "same-as-selected");
-                  if (this.parentNode.parentNode.className == "custom-select navbar") {
+                  if (this.parentNode.parentNode.className == "custom-selectbox navbar") {
                       let url = "/" + this.innerHTML.toLowerCase() + "/input/";
                       location.assign(url);
                   }
@@ -73,8 +74,8 @@ export function select_box() : void {
       /*a function that will close all select boxes in the document,
       except the current select box:*/
       var x, y, i, xl, yl, arrNo = [];
-      x = document.getElementsByClassName("select-items");
-      y = document.getElementsByClassName("select-selected");
+      x = vis.getElementsByClassName("select-items");
+      y = vis.getElementsByClassName("select-selected");
       xl = x.length;
       yl = y.length;
       for (i = 0; i < yl; i++) {

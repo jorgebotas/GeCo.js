@@ -116,3 +116,34 @@ function cselect(g : any,
       .attr("id", id)
     return cs
 }
+
+export function acheckbox(g: any,
+                label: string,
+                className?: string,
+                id?: string,
+                switch_toggle = true) {
+
+    let container_class = "form-check"
+    if (switch_toggle) {
+        container_class += " form-switch ml-4";
+    } else {
+        container_class += " ml-2";
+    }
+    let container = g.append("label")
+                     .attr("class", container_class);
+    let checkmark = container.append("input")
+                         .attr("class", 
+                             "mt-0 form-check-input form-check-legend rounded-pill "
+                             + className)
+                         .attr("type", "checkbox")
+                         .attr("checked", "")
+                         .attr("style", "margin-top:0 !important;");
+    if (id) {
+        checkmark.attr("id", id);
+    }
+    
+    container.append("span")
+             .attr("class", "form-check-label")
+             .html(label);
+    return container;
+}

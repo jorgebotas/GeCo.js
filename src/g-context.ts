@@ -10,7 +10,8 @@ import { toBlob } from './dom-to-image.js';
 import { saveAs } from 'file-saver';
 import { atext,
          draw_circle,
-         draw_rect } from './render-html';
+         draw_rect,
+         acheckbox} from './render-html';
 import { clean_string, shuffle } from './helpers';
 import { create_popper } from './popper';
 import { Margin,
@@ -116,7 +117,8 @@ function get_unique_functions(data : {[index:string] : Gene},
 async function draw_newick(selector : string,
                            newick : TreeNode,
                            nfield : number,
-                           nleaf : number) {
+                           nleaf : number,
+                           name_fields? : string[]) {
 
     var newickNodes = [];
     function buildNewickNodes(node : TreeNode) {
@@ -131,7 +133,8 @@ async function draw_newick(selector : string,
 
     buildPhylogram(selector + ' div#phylogram', newick, {
       width: 50,
-      height: nleaf * nfield * 18
+      height: nleaf * nfield * 18,
+      fields: name_fields,
     });
   };
 
@@ -170,6 +173,21 @@ function draw_legend(selector : string,
                     .style("margin", "0 auto")
                     .style("font-weight", "bold")
                     .html(title);
+    acheckbox(legend.append("div").style("display", "flex"), 
+              "Select all", 
+              undefined, 
+              div_id + "-legend-openAll",
+              false)
+    let legend_switch = $(selector + " #" + div_id + "-legend-openAll");
+    legend_switch.change(() => {
+        let switches = $(selector + " .legend-switch");
+        if (legend_switch.is(":checked")) {
+            switches.prop("checked", true);
+        } else {
+            switches.prop("checked", false);
+        }
+        switches.trigger("change");
+    })
     let nodata = legend.append("div")
                     .style("outline", "none")
                     .style("display", "flex");
@@ -189,13 +207,14 @@ function draw_legend(selector : string,
 
     (<any>Object).entries(unique_functions).forEach(([id, f] : [number|string, string]) => {
         let div = legend.append("div")
-                        .attr("id", "id"+String(id).replace("@", ""))
+                        .attr("id", "id" + clean_string(id))
                         .style("outline", "none")
                         .style("display", "flex");
         div.append("svg")
            .attr("width", 40)
            .attr("height", 40)
            .style("display", "inline-block")
+           .style("margin-top", "2px")
             .append("circle")
          .attr("r", 6)
          .attr("cx", 20)
@@ -203,16 +222,24 @@ function draw_legend(selector : string,
          .style("fill", palette(id));
       var t = div.append("div")
            .style("display", "inline-block")
-           .style("outline", "none")
-           //.attr('class', 'mw-collapsible')
+           .style("outline", "none");
+     var title : string = "<em>" + id + "</em>";
      if (notation == 'KEGG') {
-        t.html('<a href=" \
+        title = '<a href=" \
                 https://www.kegg.jp/dbget-bin/www_bget?map' +
-                id + '" target="_blank" style="outline:none;">'+id+'</a><br>' + f);
+                id + '" target="_blank" style="outline:none;">'+id+'</a>';
 
-     } else {
-         t.html("<em>" + id + "</em>" + "<br>" +f)
-     }
+     } 
+     acheckbox(t, title, "legend-switch", "c" + id, false);
+     var cb = $(selector + " #c" + id);
+     cb.change(() => {
+        if (cb.is(":checked")) {
+            d3viz.selectAll(".c" + id).attr("fill", palette(id));
+        } else {
+            d3viz.selectAll(".c" + id).attr("fill", "var(--nodata)");
+        }
+    })
+     t.append("div").attr("class", "w-100").style("display", "block").html(f);
     })
 }
 
@@ -232,7 +259,6 @@ export function create_download_button(selector : string,
                                        txt? : string) : void {
     const viz : HTMLElement = document.querySelector(selector);
     const d3viz: d3.Selection<HTMLElement> = select(selector);
-    console.log(selector)
     var btn = viz.querySelector("#" + btn_id);
 
     //var r = document.querySelector(':root');
@@ -573,15 +599,15 @@ function legend_listeners(selector : string,
             if (i != "") {
                 if (notation == "KEGG") {
                     var legend_name = viz.querySelectorAll("div#id"+
-                                        i.replace("@", "")+">div>a");
+                                        clean_string(i)+">div>label>span>a");
                 } else {
                     var legend_name = viz.querySelectorAll("div#id"+
-                                        i.replace("@", "")+">div>em");
+                                        clean_string(i)+">div>label>span>em");
                 }
 
                 legend_name.forEach(l => {
                     l.setAttribute("style",
-                        "color: #ff8c00;\
+                        "color: var(--highlight);\
                         transition: color 0.3s")
                 })
             }
@@ -592,10 +618,10 @@ function legend_listeners(selector : string,
             if (i != "") {
                 if (notation == "KEGG") {
                     var legend_name = viz.querySelectorAll("div#id"+
-                                        i.replace("@", "")+">div>a");
+                                        clean_string(i)+">div>label>span>a");
                 } else {
                     var legend_name = viz.querySelectorAll("div#id"+
-                                        i.replace("@", "")+">div>em");
+                                        clean_string(i)+">div>label>span>em");
                 }
 
                 legend_name.forEach(l => {
@@ -609,7 +635,7 @@ function legend_listeners(selector : string,
     // Legend event listeners
     ids.forEach((i : string) => {
         if (i != "") {
-            viz.querySelectorAll("div#id"+i.replace("@", ""))
+            viz.querySelectorAll("div#id"+clean_string(i))
                 .forEach(d => {
                     var t = d.querySelector("em")
                     if (notation == "KEGG") {
@@ -624,7 +650,7 @@ function legend_listeners(selector : string,
                                     .style("stroke", "black")
                                     .style("stroke-width", "2px");
                         }
-                        t.setAttribute("style", "color: #ff8c00;");
+                        t.setAttribute("style", "color: var(--highlight);");
                     });
                     d.addEventListener("mouseleave", () => {
                         if (highlight == "stroke") {
@@ -693,12 +719,12 @@ function gene_hover(selector: string,
           .style("fill", "var(--black)");
         var leaf = d3viz.select("g#g" + clean_string(central_gene));
         leaf.select("circle")
-          .style("stroke", "#ff8c00")
-          .style("fill", "#ff8c00")
+          .style("stroke", "var(--highlight)")
+          .style("fill", "var(--highlight)")
           .style("transition", "stroke 0.3s")
           .style("transition", "fill 0.3s");
         leaf.select("text")
-            .style("fill", "#ff8c00")
+            .style("fill", "var(--highlight)")
             .style("transition", "fill 0.3s");
         if (abcissa == nside) {
             gene_path.style("visibility", "visible").style("opacity", 1);
@@ -712,8 +738,8 @@ function gene_hover(selector: string,
           .style("fill", "var(--sand)");
         var leaf = d3viz.select("g#g" + clean_string(central_gene));
         leaf.select("circle")
-          .style("stroke", "#663399")
-          .style("fill", "#9370db")
+          .style("stroke", "var(--dark-purple)")
+          .style("fill", "var(--purple)")
           .style("transition", "stroke 0.3s")
           .style("transition", "fill 0.3s");
         leaf.select("text")
@@ -751,12 +777,12 @@ function tree_hover(selector : string,
         let highlight_uni = function(gene_leaf : d3.Selection<HTMLElement>,
                                      gene_path : d3.Selection<HTMLElement>) {
             gene_leaf.select("circle")
-              .style("stroke", "#ff8c00")
-              .style("fill", "#ff8c00")
+              .style("stroke", "var(--highlight)")
+              .style("fill", "var(--highlight)")
               .style("transition", "stroke 0.3s")
               .style("transition", "fill 0.3s");
             gene_leaf.select("text")
-                .style("fill", "#ff8c00")
+                .style("fill", "var(--highlight)")
                 .style("transition", "fill 0.3s");
             gene_path.style("visibility", "visible").style("opacity", 1);
 
@@ -764,8 +790,8 @@ function tree_hover(selector : string,
         let hide_uni = function(gene_leaf : d3.Selection<HTMLElement>,
                                 gene_path : d3.Selection<HTMLElement>) {
             gene_leaf.select("circle")
-              .style("stroke", "#663399")
-              .style("fill", "#9370db")
+              .style("stroke", "var(--dark-purple)")
+              .style("fill", "var(--purple)")
               .style("transition", "stroke 0.3s")
               .style("transition", "fill 0.3s");
             gene_leaf.select("text")
@@ -783,8 +809,8 @@ function tree_hover(selector : string,
                               .querySelectorAll("circle.g" + clean_string(central_gene));
         inner_clades.forEach((clade : HTMLElement) => {
             clade.addEventListener("mouseover", () => {
-                clade.setAttribute("stroke", "#ff8c00");
-                clade.setAttribute("fill", "#ff8c00");
+                clade.setAttribute("stroke", "var(--highlight)");
+                clade.setAttribute("fill", "var(--highlight)");
                 gene_path.style("visibility", "visible")
                             .style("opacity", 1);
                 highlight_uni(gene_leaf, gene_path);
@@ -855,10 +881,10 @@ function draw_neighbor(selector : string,
 
         } else {
             x0 = abcissa * rect.w + Math.abs(rect.w/2 - gene_rect.w/2);
-            if (neigh.strand == "+") {
-                x0 -= rect.ph / 5;
-            } else {
+            if (neigh.strand == "-") {
                 x0 += rect.ph / 5;
+            } else {
+                x0 -= rect.ph / 5;
             }
         }
         if (pos == 0 && fields.n) {
@@ -875,7 +901,8 @@ function draw_neighbor(selector : string,
             var identifiers = identifier_getter(neigh, notation, taxlevel);
 
             // Fill
-            var fill : string = "";
+            var arrow_fill : string = "";
+            var arrow_class : string = "";
             var identifiers_ks : string[] = [];
             try {
                 identifiers_ks = (<any>Object).keys(identifiers);
@@ -884,12 +911,14 @@ function draw_neighbor(selector : string,
                 ["", "NA", "undefined"].every(i => i!=identifiers_ks[0])){
                 let ids = identifiers_ks;
                  if (neigh.strand == "-") {
-                    fill = String(fn_palette(ids[0]));
+                    arrow_fill = String(fn_palette(ids[0]));
+                    arrow_class = ids[0];
                 } else { 
-                    fill = String(fn_palette(ids[ids.length-1]));
+                    arrow_fill = String(fn_palette(ids[ids.length-1]));
+                    arrow_class = ids[ids.length-1];
                 }
             } else {
-                fill = "var(--nodata)";
+                arrow_fill = "var(--nodata)";
                 identifiers = {"":""}
                 identifiers_ks = (<any>Object).keys(identifiers);
             }
@@ -901,18 +930,23 @@ function draw_neighbor(selector : string,
             var nrect = 0;
             identifiers_ks.forEach((id : string) => {
                 var gene_rect_fill : string = "var(--nodata)";
+                var gene_rect_class : string = "";
                 if(["", "NA", undefined].every(i => i!=id)){
                     gene_rect_fill = String(fn_palette(id));
+                    gene_rect_class = clean_string(id);
                 }
-                rectangles.push(draw_rect(g,
+                let r = draw_rect(g,
                              x0 + bar_width * nrect,
                              ordinate,
                              bar_width,
                              gene_rect.h - rect.pv,
                              gene_rect_fill,
-                             "idx" + counter));
+                             "idx" + counter);
+                r.attr("class", "c" + gene_rect_class);
+                console.log(gene_rect_class)
+                rectangles.push(r);
 
-                id_string += " id" + String(id).replace("@", "");
+                id_string += " id" + clean_string(id);
                 nrect++;
             })
 
@@ -925,10 +959,11 @@ function draw_neighbor(selector : string,
             var arrow = g
               .append("path")
               .attr("d", path)
-              .attr("fill", fill)
+              .attr("fill", arrow_fill)
               .style("outline", "none")
               .style("cursor", "pointer")
-              .attr("id", "idx" + counter);
+              .attr("id", "idx" + counter)
+              .attr("class", "c" + arrow_class);
 
             // Add hoverable stroke that sorrounds gene arrow
             let central_gene : string = d.neighborhood[0].gene
@@ -946,8 +981,8 @@ function draw_neighbor(selector : string,
                   .style("opacity", 1)
 
                 
-                $("span#highlightAnchor").click(() => {
-                    if ($("input#highlightAnchor").is(":checked")) {
+                $(selector + " span#highlightAnchor").click(() => {
+                    if ($(selector + " input#highlightAnchor").is(":checked")) {
                         anchor_stroke.style("opacity", 1)
                     } else {
                         anchor_stroke.style("opacity", 0)
@@ -1087,6 +1122,7 @@ export async function draw_genomic_context(selector : string,
                                             options : OptionSet,
                                             colors : string[],
                                             newick? : TreeNode,
+                                            tree_fields? : string[],
                                             context_width? : number,
                                             identifier_getter : 
                                             (gene:object, 
@@ -1109,7 +1145,8 @@ export async function draw_genomic_context(selector : string,
             await draw_newick(selector,
                               newick,
                               nfield,
-                              n_genes);
+                              n_genes,
+                              tree_fields);
         } catch {
             width = context_width || Math.max(parentWidth - 350, 700);
             d3viz.select("input#showTree").attr("checked", null);
@@ -1285,7 +1322,7 @@ export async function draw_genomic_context(selector : string,
                                            (ordinate + rect.h*nfield - rect.pv/2 - 1) + " " +
                                     "Z")
                             .style("fill", "none")
-                            .style("stroke", "#ff8c00")
+                            .style("stroke", "var(--highlight)")
                             .style("stroke-width", "1.5px")
                             .style("position", "relative")
                             .style("z-index", 3)
@@ -1492,6 +1529,7 @@ export async function visualize_geco(selector : string,
                                     nenv : number,
                                     colors : string[],
                                     parameters : ParamSet){
+    console.log("HELAGAKED")
 
     const viz : HTMLElement = document.querySelector(selector);
     const d3viz: d3.Selection<HTMLElement> = select(selector);
