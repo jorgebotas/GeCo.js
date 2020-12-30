@@ -216,7 +216,7 @@ function draw_legend(selector : string,
            .attr("width", 40)
            .attr("height", 40)
            .style("display", "inline-block")
-           .style("margin-top", "2px")
+           .style("margin-top", "6px")
             .append("circle")
          .attr("r", 6)
          .attr("cx", 20)

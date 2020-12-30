@@ -125,9 +125,9 @@ export function acheckbox(g: any,
 
     let container_class = "form-check"
     if (switch_toggle) {
-        container_class += " form-switch ml-4";
+        container_class += " form-switch ml-4 py-1";
     } else {
-        container_class += " ml-2";
+        container_class += " m-1 ml-2";
     }
     let container = g.append("label")
                      .attr("class", container_class);

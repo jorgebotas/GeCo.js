@@ -55,7 +55,8 @@ function styleNodes(vis : d3.Selection<HTMLElement>, fields? : string[]){
           .attr('font-size', '0.8em')
           .attr('fill', 'var(--dark-red)')
           .text(function(d : TreeNode) {
-              return +(Math.round(+(d.support + "e+"+3))  + "e-"+3);
+              return +(+d.support < 0.001 ? +d.support.toExponential(2) : +d.support.toFixed(3));
+                  //+(Math.round(+(d.support + "e+"+3))  + "e-"+3);
           });
 
       vis.selectAll('g.inner.node')
