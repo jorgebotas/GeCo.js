@@ -134,7 +134,7 @@ async function draw_newick(selector : string,
     buildPhylogram(selector + ' div#phylogram', newick, {
       width: 50,
       height: nleaf * nfield * 18,
-      fields: name_fields,
+      name_fields: name_fields,
     });
   };
 
@@ -1272,19 +1272,6 @@ export async function draw_genomic_context(selector : string,
         largest_ordinate = Math.max(largest_ordinate, ordinate);
         central_pos++;
 
-        // Display swapped rows
-/*        if (d.neighborhood[0].swapped || d.neighborhood[0].strand == "-") {*/
-            //g.append("rect")
-              //.attr("x", -rect.ph / 2)
-              //.attr("y", ordinate - rect.pv / 2 + 1)
-              //.attr("width", width - margin.right)
-              //.attr("height", gene_rect.h - 2)
-              //.style("position", "relative")
-              //.style("z-index", -10)
-              //.style("outline", "none")
-              //.attr("fill", "#744013")
-              //.attr("opacity", 0.1);
-        /*}*/
         function swap_strand(s : "+"|"-", reference_s : "+"|"-") {
             if (reference_s == "+"){
                 return s;
@@ -1335,15 +1322,6 @@ export async function draw_genomic_context(selector : string,
         // Tree clades and leafs hover rationale
         tree_hover(selector, central_gene, gene_path);
 
-        //if (fields.showPos) {
-            //draw_genomic_path(g, 
-                              //width,
-                              //ordinate, 
-                              //fields.showPos.y, 
-                              //rect, 
-                              //margin);
-        //}
-
         // Visit each neighbor and visualize it
         var collapsedDistance = 2;
         var initialX : {[index:string]:number} =  {
@@ -1370,11 +1348,6 @@ export async function draw_genomic_context(selector : string,
                         distance = collapsedDistance; 
                     }
                     if (pos == 0) {
-                        //if (neigh.size) {
-                            //distance = Math.abs(rect.w/2 - sizeScale(neigh.size)/2);
-                        //} else {
-                            //distance = 0;
-                        //}                    
                         distance = 0;
                     }
                     x0 = lastX.xf + distance;
@@ -1531,7 +1504,6 @@ export async function visualize_geco(selector : string,
                                     nenv : number,
                                     colors : string[],
                                     parameters : ParamSet){
-    console.log("HELAGAKED")
 
     const viz : HTMLElement = document.querySelector(selector);
     const d3viz: d3.Selection<HTMLElement> = select(selector);
@@ -1574,7 +1546,8 @@ export async function visualize_geco(selector : string,
                                fields,
                                options,
                                colors,
-                               newick);
+                               newick,
+                               ["name", "gene"]);
     viz.querySelector("div#submit-params").scrollIntoView({behavior: "smooth"});
     d3viz.select("div#download-btns").style("visibility", "visible")
                           .style("opacity", 1);
