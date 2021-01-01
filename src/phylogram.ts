@@ -67,7 +67,7 @@ function styleNodes(vis : d3.Selection<HTMLElement>, fields? : string[]){
           .attr('font-size', '0.8em')
           .attr('fill', '#aaa')
           .text(function(d : TreeNode) {
-                  let rounded = +(+d.length < 0.001 ? +d.length.toExponential(2) : +d.length.toFixed(3);
+                  let rounded = +(+d.length < 0.001 ? +d.length.toExponential(2) : +d.length.toFixed(3));
               if (rounded) {
                 return rounded;
               } else { return d.length; }
