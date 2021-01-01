@@ -118,15 +118,21 @@ function styleNodes(vis : d3.Selection<HTMLElement>, fields? : string[]){
                     let name_split = d.name.split(".");
                     let name = name_split[fields.indexOf("name")];
                     let content = "";
-                    name_split.forEach(([n,i]) => {
+                    name_split.forEach((n,i) => {
                         if (n != name) {
-                            content += "<p>" + fields[i] + ": " + n + "</p>";
+                            content += "- " + fields[i] + ": " + n + "\n";
                         }
                     })
                     return content;
             } else { return "" }
         })
         .append("svg:text")
+        .attr("dx", 13)
+        .attr("dy", 5)
+        .attr("text-anchor", "start")
+        .attr('font-family', 'san-serif') //Helvetica Neue, Helvetica, sans-serif
+        .attr('font-size', '0.9em')
+        .attr('fill', 'var(--dark-gray)')
         .text(function(d : TreeNode) {
             if (fields) {
                     let name_split = d.name.split(".");
