@@ -68,7 +68,12 @@ function styleNodes(vis : d3.Selection<HTMLElement>, fields? : string[]){
           .attr('fill', '#aaa')
           .text(function(d : TreeNode) {
               //let rounded = +(((+d.length) < 0.001) ? (+d.length).toExponential(1) : (+d.length).toFixed(3));
-              let rounded = (+d.length).toExponential(1);
+              let rounded : number;
+              //if ((+d.length) < 0.001) {
+              rounded = +(+d.length).toExponential(1);
+              //} else {
+                  //rounded = +(+d.length).toFixed(3);
+              //}
               console.log(d.length)
               console.log(rounded)
               if (rounded) {
@@ -157,11 +162,11 @@ function scaleBranchLengths(nodes : TreeNode[]) {
     var nodeLengths = nodes.map(function(n:TreeNode) { return n.length; });
     var yscale = scale.linear()
         .domain([0, max(nodeLengths)])
-        .range([0, 30]);
+        .range([0, 33]);
     visitPreOrder(nodes[0], function(node:TreeNode) {
-      node.y = 30 * (node.depth + 1);
+      node.y = 33 * (node.depth + 1);
         if (node.length != undefined) {
-          node.dotted = 30 - yscale(node.length);
+          node.dotted = 33 - yscale(node.length);
         } else {
             node.dotted = 0;
         }
