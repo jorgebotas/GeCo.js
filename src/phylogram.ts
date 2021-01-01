@@ -67,7 +67,7 @@ function styleNodes(vis : d3.Selection<HTMLElement>, fields? : string[]){
           .attr('font-size', '0.8em')
           .attr('fill', '#aaa')
           .text(function(d : TreeNode) {
-                  let rounded = +(Math.round(+(d.length + "e+"+3))  + "e-"+3);
+                  let rounded = +(+d.length < 0.001 ? +d.length.toExponential(2) : +d.length.toFixed(3);
               if (rounded) {
                 return rounded;
               } else { return d.length; }
@@ -103,15 +103,7 @@ function styleNodes(vis : d3.Selection<HTMLElement>, fields? : string[]){
       vis.selectAll('g.leaf.node')
         .attr("id", function(d : TreeNode) { return "g" + clean_string(d.name); });
       vis.selectAll('g.leaf.node')
-        //.append("svg:text")
-        //.attr("dx", 13)
-        //.attr("dy", 5)
-        //.attr("text-anchor", "start")
-        //.attr('font-family', 'san-serif') //Helvetica Neue, Helvetica, sans-serif
-        //.attr('font-size', '0.9em')
-        //.attr('fill', 'var(--dark-gray)')
         .append('a')
-        .attr('href', '#')
         .attr('data-toggle', 'popover')
         .attr('data-content', function(d : TreeNode) {
             if (fields) {
