@@ -945,7 +945,6 @@ function draw_neighbor(selector : string,
                              gene_rect_fill,
                              "idx" + counter);
                 r.attr("class", "c" + gene_rect_class);
-                console.log(gene_rect_class)
                 rectangles.push(r);
 
                 id_string += " id" + clean_string(id);
