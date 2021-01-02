@@ -186,27 +186,28 @@ function get_popper_html(pos : number,
 export function apopper(id : string,
                         popper_html : string,
                         popper_class : string) {
-    var popper_d3 = select("div#synteny")
+    var popper_d3 = select("body")
                    .append("div")
                    .attr("class", "popper " + popper_class)
-                   .attr("id", "#" + id);
+                   .attr("id", id);
     // popper content
     popper_d3.append("div")
-             .attr("class", "popper-content")
+             .attr("class", "popper-content card-body h6 text-center")
              .html(popper_html);
     // popper arrow
     popper_d3.append("div")
-             .attr("class", "popper-arrow");
-    var popper = document.querySelector(".popper#" + id);
-    var ref_text = document.querySelector("text#" + id);
+             .attr("class", "popper-arrow d-none");
+    var popper : HTMLElement = document.querySelector(".popper#" + id);
+    var ref_text : HTMLElement = document.querySelector("text#" + id);
       function create() {
           // Popper Instance
           createPopper(ref_text, popper, {
+          placement: 'right',
           modifiers: [
             {
               name: 'offset',
               options: {
-                offset: [0, 8],
+                offset: [20, -8],
               },
             },
               {
@@ -235,8 +236,8 @@ export function apopper(id : string,
       const showEvents = ['click'];
 
       showEvents.forEach(function (event) {
-        ref_text.addEventListener(event, show);
         popper.addEventListener(event, show);
+        ref_text.addEventListener(event, show);
       });
 }
 
@@ -271,7 +272,7 @@ export function create_popper(pos : number,
     popper_d3.append("div")
              .attr("class", "popper-arrow");
 
-    var popper = document.querySelector(".popper#idx" + counter);
+    var popper : HTMLElement = document.querySelector(".popper#idx" + counter);
 
     var rects = document.querySelectorAll("rect#idx" + counter);
     var paths = document.querySelectorAll("path#idx" + counter);

@@ -113,7 +113,7 @@ function styleNodes(vis : d3.Selection<HTMLElement>,
         .attr("id", function(d : TreeNode) { return "g" + clean_string(d.name); });
       vis.selectAll('g.leaf.node')
         .append("svg:text")
-        .attr("id", function(d : TreeNode) { return "t" + clean_string(d.name); })
+        .attr("id", function(d : TreeNode) { return "idxt" + clean_string(d.name); })
         .attr("dx", 13)
         .attr("dy", 5)
         .attr("text-anchor", "start")
@@ -139,27 +139,10 @@ function styleNodes(vis : d3.Selection<HTMLElement>,
                         content += "<p>" + fields[i] + ": " + n + "</p>";
                     }
                 })
-                apopper("t" + clean_string(d.name), content, " col-md-2");
+                apopper("idxt" + clean_string(d.name), content, "col-md-2");
             }
           })
       } 
-         //.append('a')
-        //.attr('data-toggle', 'popover')
-        //.attr('data-placement', 'right')
-        //.attr('data-html', 'true')
-        //.attr('data-content', function(d : TreeNode) {
-            //if (fields) {
-                    //let name_split = d.name.split(".");
-                    //let name = name_split[fields.indexOf("name")];
-                    //let content = "";
-                    //name_split.forEach((n,i) => {
-                        //if (n != name) {
-                            //content += "<p>" + fields[i] + ": " + n + "</p>";
-                        //}
-                    //})
-                    //return content;
-            //} else { return "" }
-        //})       });
 }
 
 

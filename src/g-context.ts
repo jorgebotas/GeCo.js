@@ -1149,9 +1149,9 @@ export async function draw_genomic_context(selector : string,
                               n_genes,
                               tree_fields);
         //} catch {
-            width = context_width || Math.max(parentWidth - 350, 700);
-            d3viz.select("input#showTree").attr("checked", null);
-            d3viz.select("div#phylogram").style("display", "none");
+            //width = context_width || Math.max(parentWidth - 350, 700);
+            //d3viz.select("input#showTree").attr("checked", null);
+            //d3viz.select("div#phylogram").style("display", "none");
         //}
     } else {
             width = context_width || Math.max(parentWidth - 350, 700);
