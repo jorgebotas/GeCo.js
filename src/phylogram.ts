@@ -5,6 +5,7 @@ import { select,
 
 import { TreeNode } from './interfaces';
 import { clean_string } from './helpers';
+import { apopper } from './popper';
 
 
 function rightAngleDiagonal () {
@@ -29,7 +30,9 @@ function rightAngleDiagonal () {
 }
 
 
-function styleNodes(vis : d3.Selection<HTMLElement>, fields? : string[]){
+function styleNodes(vis : d3.Selection<HTMLElement>,
+                    nodes : TreeNode[],
+                    fields? : string[]){
     // Leaf nodes
     vis.selectAll('g.leaf.node')
       .append("svg:circle")
@@ -69,13 +72,11 @@ function styleNodes(vis : d3.Selection<HTMLElement>, fields? : string[]){
           .text(function(d : TreeNode) {
               //let rounded = +(((+d.length) < 0.001) ? (+d.length).toExponential(1) : (+d.length).toFixed(3));
               let rounded : number;
-              //if ((+d.length) < 0.001) {
-              rounded = +(+d.length).toExponential(1);
-              //} else {
-                  //rounded = +(+d.length).toFixed(3);
-              //}
-              console.log(d.length)
-              console.log(rounded)
+              if ((+d.length) < 0.001) {
+                  rounded = +(+d.length).toExponential(1);
+              } else {
+                  rounded = +(+d.length).toFixed(3);
+              }
               if (rounded) {
                 return rounded;
               } else { return d.length; }
@@ -111,24 +112,8 @@ function styleNodes(vis : d3.Selection<HTMLElement>, fields? : string[]){
       vis.selectAll('g.leaf.node')
         .attr("id", function(d : TreeNode) { return "g" + clean_string(d.name); });
       vis.selectAll('g.leaf.node')
-        .append('a')
-        .attr('data-toggle', 'popover')
-        .attr('data-placement', 'right')
-        .attr('data-html', 'true')
-        .attr('data-content', function(d : TreeNode) {
-            if (fields) {
-                    let name_split = d.name.split(".");
-                    let name = name_split[fields.indexOf("name")];
-                    let content = "";
-                    name_split.forEach((n,i) => {
-                        if (n != name) {
-                            content += "<p>" + fields[i] + ": " + n + "</p>";
-                        }
-                    })
-                    return content;
-            } else { return "" }
-        })
         .append("svg:text")
+        .attr("id", function(d : TreeNode) { return "t" + clean_string(d.name); })
         .attr("dx", 13)
         .attr("dy", 5)
         .attr("text-anchor", "start")
@@ -142,6 +127,39 @@ function styleNodes(vis : d3.Selection<HTMLElement>, fields? : string[]){
                     return name;
             } else { return d.name }
         });
+
+      if (fields){
+          nodes.forEach((d : TreeNode) => {
+            if (!d.children) {
+                let name_split = d.name.split(".");
+                let name = name_split[fields.indexOf("name")];
+                let content = "";
+                name_split.forEach((n,i) => {
+                    if (n != name) {
+                        content += "<p>" + fields[i] + ": " + n + "</p>";
+                    }
+                })
+                apopper("t" + clean_string(d.name), content, " col-md-2");
+            }
+          })
+      } 
+         //.append('a')
+        //.attr('data-toggle', 'popover')
+        //.attr('data-placement', 'right')
+        //.attr('data-html', 'true')
+        //.attr('data-content', function(d : TreeNode) {
+            //if (fields) {
+                    //let name_split = d.name.split(".");
+                    //let name = name_split[fields.indexOf("name")];
+                    //let content = "";
+                    //name_split.forEach((n,i) => {
+                        //if (n != name) {
+                            //content += "<p>" + fields[i] + ": " + n + "</p>";
+                        //}
+                    //})
+                    //return content;
+            //} else { return "" }
+        //})       });
 }
 
 
@@ -332,7 +350,7 @@ export function buildPhylogram(selector : string,
         .attr("transform", function(d : TreeNode) {
             return "translate(" + d.y + "," + d.x + ")";
         })
-    styleNodes(vis, options.name_fields);
+    styleNodes(vis, nodes,  options.name_fields);
 
     var largest_abcissa = 0
     nodes.forEach((n : TreeNode) => {

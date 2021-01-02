@@ -268,13 +268,12 @@ export default async function launch_GeCo(selector : string,
                            undefined,
                            String(tree));
     parameter_listener(selector, data, newick, nenv, colors);
-    popper_click();
-
     await launch_graphication(selector,
                               data,
                               newick,
                               nenv,
                               colors)
+    popper_click();
 }
 
 window.launch_GeCo = launch_GeCo;

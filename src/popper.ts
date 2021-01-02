@@ -1,12 +1,9 @@
 import { select } from 'd3';
-
 import { createPopper } from '@popperjs/core';
-
 
 import { pad_with_zeroes,
          remove_item,
          lookForParent } from './helpers';
-
 import { Gene, Notation } from './interfaces';
 
 
@@ -179,6 +176,69 @@ function get_popper_html(pos : number,
     return popper_html
 };
 
+/**
+ * Create custom  popover
+ * @function create_popper
+ * @param {string} id: id of target element
+ * @param {string} popper_html: popover content
+ * @param {string} popper_class
+ */
+export function apopper(id : string,
+                        popper_html : string,
+                        popper_class : string) {
+    var popper_d3 = select("div#synteny")
+                   .append("div")
+                   .attr("class", "popper " + popper_class)
+                   .attr("id", "#" + id);
+    // popper content
+    popper_d3.append("div")
+             .attr("class", "popper-content")
+             .html(popper_html);
+    // popper arrow
+    popper_d3.append("div")
+             .attr("class", "popper-arrow");
+    var popper = document.querySelector(".popper#" + id);
+    var ref_text = document.querySelector("text#" + id);
+      function create() {
+          // Popper Instance
+          createPopper(ref_text, popper, {
+          modifiers: [
+            {
+              name: 'offset',
+              options: {
+                offset: [0, 8],
+              },
+            },
+              {
+                  name: 'flip',
+                  options: {
+                      fallbackPlacements: ['top'],
+                  }
+              }
+          ],
+        });
+      }
+
+      function show() {
+        hide();
+        popper.setAttribute('data-show', '');
+        create();
+      }
+
+      function hide() {
+        var poppers = document.querySelectorAll(".popper")
+        poppers.forEach(popper => {
+            popper.removeAttribute('data-show');
+        });
+      };
+
+      const showEvents = ['click'];
+
+      showEvents.forEach(function (event) {
+        ref_text.addEventListener(event, show);
+        popper.addEventListener(event, show);
+      });
+}
 
 /**
  * Create and fill popper information from gene instance (neigh)
@@ -196,7 +256,7 @@ export function create_popper(pos : number,
                        counter : number) {
     var popper_d3 = select("div#synteny")
                    .append("div")
-                   .attr("class", "popper")
+                   .attr("class", "popper col-md-4")
                    .attr("id", "idx" + counter);
     var popper_html = get_popper_html(pos,
                                       neigh,
