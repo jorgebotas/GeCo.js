@@ -135,7 +135,9 @@ function styleNodes(vis : d3.Selection<HTMLElement>,
                 let name = name_split[fields.indexOf("name")];
                 let content = "";
                 name_split.forEach((n,i) => {
-                    if (n != name) {
+                    if (n == name) {
+                        content += "<p>" +  n + "</p>";
+                    }  else {
                         content += "<p>" + fields[i] + ": " + n + "</p>";
                     }
                 })

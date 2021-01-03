@@ -1140,7 +1140,7 @@ export async function draw_genomic_context(selector : string,
     var width : number = context_width || Math.max(parentWidth - 1050, 700);
     var nfield : number = Object.keys(fields).length + 1 || 1;
     if (options.showTree) {
-        //try {
+        try {
            d3viz.select("div#phylogram").style("display", "inline-block");
             var n_genes = (<any>Object).keys(data).length;
             await draw_newick(selector,
@@ -1148,11 +1148,11 @@ export async function draw_genomic_context(selector : string,
                               nfield,
                               n_genes,
                               tree_fields);
-        //} catch {
-            //width = context_width || Math.max(parentWidth - 350, 700);
-            //d3viz.select("input#showTree").attr("checked", null);
-            //d3viz.select("div#phylogram").style("display", "none");
-        //}
+        } catch {
+            width = context_width || Math.max(parentWidth - 350, 700);
+            d3viz.select("input#showTree").attr("checked", null);
+            d3viz.select("div#phylogram").style("display", "none");
+        }
     } else {
             width = context_width || Math.max(parentWidth - 350, 700);
             d3viz.select("div#phylogram").style("display", "none");

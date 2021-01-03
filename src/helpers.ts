@@ -49,12 +49,12 @@ export function remove_item(array : any[], item : any) {
 
 export function lookForParent(element : HTMLElement, 
                              target_class : string) : HTMLElement {
-
     let el = element;
     let name = el.nodeName;
     let cl = el.className;
     while (name && name != "HTML") {
-        if (cl == target_class) {
+        console.log(cl.match(target_class))
+        if (cl.match(target_class)) {
             return el;
         }
         el = el.parentElement;

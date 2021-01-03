@@ -147,10 +147,10 @@ function get_popper_html(pos : number,
         popper_html += "Analysed contigs: " + neigh.n_contig + "<br>";
     }
      if (neigh.gene) {
-        popper_html += "<a href='/genecontext/" + 
+        var pathInit = window.location.pathname.split("/")[1];
+        popper_html += "<a href='/" + pathInit + "/genecontext/" + 
                        neigh.gene +"' target='_blank'>\
                                  Unique contigs</a><br>";
-
      }
      if (neigh.GMGFam) {
         popper_html += "<br><strong>GMGFam</strong><br>" +
@@ -192,7 +192,7 @@ export function apopper(id : string,
                    .attr("id", id);
     // popper content
     popper_d3.append("div")
-             .attr("class", "popper-content card-body h6 text-center")
+             .attr("class", "popper-content card-body h6 pt-2")
              .html(popper_html);
     // popper arrow
     popper_d3.append("div")
@@ -207,7 +207,7 @@ export function apopper(id : string,
             {
               name: 'offset',
               options: {
-                offset: [20, -8],
+                offset: [0, 10],
               },
             },
               {
@@ -340,6 +340,7 @@ export function popper_click() : void {
         } catch {
             targetId = e.target.id;
         } 
+        console.log(targetId)
         if (targetId.slice(0,3)=="idx"){
             var popper = document.querySelector(".popper#"+targetId);
             var refbound = document.querySelector("text#"+targetId)
