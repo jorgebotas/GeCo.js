@@ -58,8 +58,17 @@ function styleNodes(vis : d3.Selection<HTMLElement>,
           .attr('font-size', '0.8em')
           .attr('fill', 'var(--dark-red)')
           .text(function(d : TreeNode) {
-              return +(((+d.support) < 0.001) ? (+d.support).toExponential(1) : (+d.support).toFixed(3));
-                  //+(Math.round(+(d.support + "e+"+3))  + "e-"+3);
+              let rounded : string;
+              if ((+d.support) < 0.001) {
+                  rounded = (+d.support).toExponential(1);
+              } else {
+                  rounded = (+d.support).toFixed(3);
+              }
+              if (rounded) {
+                return rounded;
+              } else { 
+                  return d.support;
+              };
           });
 
       vis.selectAll('g.inner.node')
@@ -70,16 +79,17 @@ function styleNodes(vis : d3.Selection<HTMLElement>,
           .attr('font-size', '0.8em')
           .attr('fill', '#aaa')
           .text(function(d : TreeNode) {
-              //let rounded = +(((+d.length) < 0.001) ? (+d.length).toExponential(1) : (+d.length).toFixed(3));
-              let rounded : number;
+              let rounded : string;
               if ((+d.length) < 0.001) {
-                  rounded = +(+d.length).toExponential(1);
+                  rounded = (+d.length).toExponential(1);
               } else {
-                  rounded = +(+d.length).toFixed(3);
+                  rounded = (+d.length).toFixed(3);
               }
               if (rounded) {
                 return rounded;
-              } else { return d.length; }
+              } else { 
+                  return d.length;
+              }
           });
 
 

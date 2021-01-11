@@ -1,10 +1,11 @@
-import { select } from 'd3';
+import { select, scale } from 'd3';
 import { createPopper } from '@popperjs/core';
 
 import { pad_with_zeroes,
          remove_item,
          lookForParent } from './helpers';
 import { Gene, Notation } from './interfaces';
+import { draw_protDomains } from './domains';
 
 
 /**
@@ -61,7 +62,9 @@ function get_popper_html(pos : number,
                     kegg_links += '<li><a href=" \
                             https://www.kegg.jp/dbget-bin/www_bget?map' +
                             kegg_id + '" target="_blank">'+kegg_id+'</a> ';
-                            if (pos == 0 && k.percentage != "NA"){
+                            if (pos == 0 && 
+                                k.percentage != "NA" &&
+                                k.percentage){
                                 kegg_links += "(" + k.percentage + ")\n";
                             }
                      kegg_links += k.description + "</li>";
@@ -91,7 +94,7 @@ function get_popper_html(pos : number,
                             if (i != 'scores') {
                                 (<any>Object).values(l).forEach((v : Notation) => {
                                     eggnog_data += "<li><em>" + v.id + "</em> ";
-                                    if (pos == 0 && v.id != ""){
+                                    if (pos == 0 && v.id != "" && v.percentage){
                                         eggnog_data += "(" + v.percentage + ")";
                                     }
                                         eggnog_data += "\n" + v.description + "</li>";
@@ -146,6 +149,9 @@ function get_popper_html(pos : number,
     if (neigh.n_contig) {
         popper_html += "Analysed contigs: " + neigh.n_contig + "<br>";
     }
+     if (neigh.domains) {
+         popper_html += "<div id='dom" + neigh.gene + "'></div>"
+     }
      if (neigh.gene) {
         var pathInit = window.location.pathname.split("/")[1];
         popper_html += "<a href='/" + pathInit + "/genecontext/" + 
@@ -268,6 +274,58 @@ export function create_popper(pos : number,
     popper_d3.append("div")
              .attr("class", "popper-content")
              .html(popper_html);
+    if (neigh.domains) {
+        var doms = new Set();
+        neigh.domains.forEach((d : any) => {
+            if (d.class && d.class != "") {
+                doms.add(d.class)
+            }
+        })
+        var colors = [
+            '#6574cd',
+            '#e6ac00',
+            '#ffa3b2',
+            "#254F93",
+            "#c9b2fd",
+            "#fcaf81",
+            "#a9dff7",
+            "#FF5C8D",
+            "#838383",
+            "#5F33FF",
+            "#c7e3aa",
+            "#abfdcb",
+            "#D81E5B",
+            "#47DAFF",
+            "#c4ab77",
+            "#A1A314",
+            "#fff600",
+            "#53257E",
+            "#1e90ff",
+            "#B6549A",
+            "#7cd407",
+            "#948ad6",
+            "#7ba0d5",
+            "#fcc6f8",
+            "#fec24c",
+            "#A40E4C",
+            "#dd5a95",
+            "#12982d",
+            "#27bda9",
+            "#F0736A",
+            "#9354e7",
+            "#cbd5e3",
+            "#93605D",
+            "#FFE770",
+            "#6C9D7F",
+            "#2c23e4",
+            "#ff6200",
+            "#406362"
+              ];
+        var palette = scale.ordinal()
+                        .domain(doms)
+                        .range(colors);
+        draw_protDomains("dom" + neigh.gene, neigh.domains, neigh.size, 250, 7, palette)
+    }
     // popper arrow
     popper_d3.append("div")
              .attr("class", "popper-arrow");
@@ -340,7 +398,6 @@ export function popper_click() : void {
         } catch {
             targetId = e.target.id;
         } 
-        console.log(targetId)
         if (targetId.slice(0,3)=="idx"){
             var popper = document.querySelector(".popper#"+targetId);
             var refbound = document.querySelector("text#"+targetId)

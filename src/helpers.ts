@@ -53,8 +53,7 @@ export function lookForParent(element : HTMLElement,
     let name = el.nodeName;
     let cl = el.className;
     while (name && name != "HTML") {
-        console.log(cl.match(target_class))
-        if (cl.match(target_class)) {
+        if (cl.split(' ').indexOf(target_class) > -1) {
             return el;
         }
         el = el.parentElement;
@@ -64,10 +63,10 @@ export function lookForParent(element : HTMLElement,
     return undefined;
 }
 
-export function clean_string(s) {
+export function clean_string(s : string) {
     let clean = String(s);
     let dirt = ".,;:/\'-@<>?()[]{}#%!*|".split("");
-    dirt.forEach((d:string) => {
+    dirt.forEach((d : string) => {
         clean = clean.replaceAll(d, "");
     })
     return clean;

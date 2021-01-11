@@ -207,7 +207,7 @@ function draw_legend(selector : string,
        .style("outline", "none")
        .html("No data");
 
-    (<any>Object).entries(unique_functions).forEach(([id, f] : [number|string, string]) => {
+    (<any>Object).entries(unique_functions).forEach(([id, f] : [string, string]) => {
         let div = legend.append("div")
                         .attr("id", "id" + clean_string(id))
                         .style("outline", "none")
@@ -232,13 +232,13 @@ function draw_legend(selector : string,
                 id + '" target="_blank" style="outline:none;">'+id+'</a>';
 
      } 
-     acheckbox(t, title, "legend-switch", "c" + id, false);
-     var cb = $(selector + " #c" + id);
+     acheckbox(t, title, "legend-switch", "c" + clean_string(id), false);
+     var cb = $(selector + " #c" + clean_string(id));
      cb.change(() => {
         if (cb.is(":checked")) {
-            d3viz.selectAll(".c" + id).attr("fill", palette(id));
+            d3viz.selectAll(".c" + clean_string(id)).attr("fill", palette(id));
         } else {
-            d3viz.selectAll(".c" + id).attr("fill", "var(--nodata)");
+            d3viz.selectAll(".c" + clean_string(id)).attr("fill", "var(--nodata)");
         }
     })
      t.append("div").attr("class", "w-100").style("display", "block").html(f);
@@ -1149,12 +1149,12 @@ export async function draw_genomic_context(selector : string,
                               n_genes,
                               tree_fields);
         } catch {
-            width = context_width || Math.max(parentWidth - 350, 700);
+            width = context_width || Math.max(parentWidth - 400, 700);
             d3viz.select("input#showTree").attr("checked", null);
             d3viz.select("div#phylogram").style("display", "none");
         }
     } else {
-            width = context_width || Math.max(parentWidth - 350, 700);
+            width = context_width || Math.max(parentWidth - 400, 700);
             d3viz.select("div#phylogram").style("display", "none");
     }
 
@@ -1553,7 +1553,6 @@ export async function visualize_geco(selector : string,
     d3viz.select("div#"+div_id).style("visibility", "visible")
                             .style("opacity", 1);
     try {
-
         viz.querySelector("path.anchor-stroke").scrollIntoView({behavior: "smooth", block: "nearest", inline: "center"});
     } catch {}
 }
