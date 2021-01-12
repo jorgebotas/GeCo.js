@@ -241,7 +241,11 @@ function draw_legend(selector : string,
             d3viz.selectAll(".c" + clean_string(id)).attr("fill", "var(--nodata)");
         }
     })
-     t.append("div").attr("class", "w-100").style("display", "block").html(f);
+     t.append("div")
+      .attr("class", "w-100")
+      .style("display", "block")
+      .style("max-height", "35px")
+      .html(f);
     })
 }
 
@@ -1546,7 +1550,7 @@ export async function visualize_geco(selector : string,
                                options,
                                colors,
                                newick,
-                               ["name", "gene"]);
+                               ["name", "tax id", "gene"]);
     viz.querySelector("div#submit-params").scrollIntoView({behavior: "smooth"});
     d3viz.select("div#download-btns").style("visibility", "visible")
                           .style("opacity", 1);

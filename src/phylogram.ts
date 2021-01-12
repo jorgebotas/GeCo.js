@@ -57,19 +57,7 @@ function styleNodes(vis : d3.Selection<HTMLElement>,
           .attr("text-anchor", 'end')
           .attr('font-size', '0.8em')
           .attr('fill', 'var(--dark-red)')
-          .text(function(d : TreeNode) {
-              let rounded : string;
-              if ((+d.support) < 0.001) {
-                  rounded = (+d.support).toExponential(1);
-              } else {
-                  rounded = (+d.support).toFixed(3);
-              }
-              if (rounded) {
-                return rounded;
-              } else { 
-                  return d.support;
-              };
-          });
+          .text((d : TreeNode) => (+d.support).toFixed(1) );
 
       vis.selectAll('g.inner.node')
         .append("svg:text")

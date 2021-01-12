@@ -124,23 +124,13 @@ async function launch_graphication(selector : string,
                                data : {[index:string]:Gene},
                                newick : TreeNode, 
                                nenv: number,
-                               colors : string[]) {
+                               colors : string[],
+                               eggNOG_levels? : object | string) {
     console.log(data)
     const d3viz: d3.Selection<HTMLElement> = select(selector);
     // Remove previously computed graph
     erase_graph(selector, "graph", true);
     // Get eggNOG tax level names for friendlier visualization
-    var eggNOG_levels = {}
-    try {
-        //await fetch('/results/eggNOG_LEVELS.txt')
-            //.then(response => response.text())
-            //.then(lvs => eggNOG_levels = JSON.parse(lvs))
-        var levels = await $.ajax({
-            url: '/egglevels/',
-        })
-        eggNOG_levels = JSON.parse(levels);
-    } catch {};
-    
     try {
         // Display eggNOG taxonomic levels
         var egg_levels = get_levels(data, "eggNOG");
@@ -149,6 +139,7 @@ async function launch_graphication(selector : string,
             if (name != "prediction" &&
                 name != "scores") {
                 if (eggNOG_levels != "{}" && 
+                    eggNOG_levels &&
                     eggNOG_levels[l]){
                     name += ": " + eggNOG_levels[l];
                 }
@@ -255,7 +246,8 @@ export default async function launch_GeCo(selector : string,
                                           data : {[index:string]:Gene},
                                           tree : string,
                                           nenv : number,
-                                          colors : string[]) {
+                                          colors : string[],
+                                          egg_levels? : object) {
     var newick : TreeNode;
     if (tree) {
         newick = parseNewick(tree);
@@ -272,7 +264,8 @@ export default async function launch_GeCo(selector : string,
                               data,
                               newick,
                               nenv,
-                              colors)
+                              colors,
+                              egg_levels)
     popper_click();
 }
 

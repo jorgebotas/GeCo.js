@@ -149,14 +149,14 @@ function get_popper_html(pos : number,
     if (neigh.n_contig) {
         popper_html += "Analysed contigs: " + neigh.n_contig + "<br>";
     }
-     if (neigh.domains) {
-         popper_html += "<div id='dom" + neigh.gene + "'></div>"
-     }
      if (neigh.gene) {
         var pathInit = window.location.pathname.split("/")[1];
         popper_html += "<a href='/" + pathInit + "/genecontext/" + 
                        neigh.gene +"' target='_blank'>\
                                  Unique contigs</a><br>";
+     }
+     if (neigh.domains) {
+         popper_html += "<div class='py-2' id='dom" + neigh.gene + "'></div>"
      }
      if (neigh.GMGFam) {
         popper_html += "<br><strong>GMGFam</strong><br>" +
@@ -275,7 +275,7 @@ export function create_popper(pos : number,
              .attr("class", "popper-content")
              .html(popper_html);
     if (neigh.domains) {
-        var doms = new Set();
+        var doms : any = new Set();
         neigh.domains.forEach((d : any) => {
             if (d.class && d.class != "") {
                 doms.add(d.class)

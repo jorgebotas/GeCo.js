@@ -15,7 +15,7 @@ export function draw_protDomains (id, domains, lenseq, width, height, palette) {
     function draw_legend(selector, domains, palette) {
         var legend = select(selector)
          .append("div")
-         .attr("class", "px-3");
+         .attr("class", "dom-legend");
         var doms = new Set();
         domains.forEach(d => {
             if (d.class && d.class != "") {
@@ -57,7 +57,6 @@ export function draw_protDomains (id, domains, lenseq, width, height, palette) {
             .attr("fill", d => { return palette(d.class) });
     }
     var g = select('#' + id)
-              .append("div")
               .append('svg:svg')
               .attr("width", width)
               .attr("height", height)
@@ -65,5 +64,5 @@ export function draw_protDomains (id, domains, lenseq, width, height, palette) {
                 .attr("transform", "translate(" + 5 + ", 0)");
     draw_seqLine(g, width, height);
     draw_domains(g, domains, lenseq, width, height, palette);
-    draw_legend('#' + id + ' div', domains, palette);
+    draw_legend('#' + id, domains, palette);
 }
