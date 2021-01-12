@@ -1291,10 +1291,11 @@ export async function draw_genomic_context(selector : string,
             for(let p = -nenv; p <= nenv; p++) {
                 let swapped_neigh : Gene = d.neighborhood[p];
                 if (swapped_neigh) {
-                    console.log(swapped_neigh)
                     let n_strand : "+"|"-" = swapped_neigh.strand ? swapped_neigh.strand : "+";
                     swapped_neigh.strand = swap_strand(n_strand, 
                                                 d.neighborhood[0].strand);
+                    console.log(d.neighborhood[p])
+                    console.log(swapped_neigh)
                 }
                 swapped[-p] = swapped_neigh;
             }
