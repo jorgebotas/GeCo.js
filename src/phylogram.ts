@@ -130,10 +130,10 @@ function styleNodes(vis : d3.Selection<HTMLElement>,
           nodes.forEach((d : TreeNode) => {
             if (!d.children) {
                 let name_split = d.name.split(".");
-                let name = name_split[fields.indexOf("name")];
+                let i_name = fields.indexOf("name");
                 let content = "";
                 name_split.forEach((n,i) => {
-                    if (n == name) {
+                    if (i == i_name) {
                         content += "<p>" +  n + "</p>";
                     }  else {
                         content += "<p>" + fields[i] + ": " + n + "</p>";

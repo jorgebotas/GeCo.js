@@ -164,7 +164,7 @@ function get_popper_html(pos : number,
      }
      try {
         let p : string = Object.keys(neigh.tax_prediction[tpred_level])[0];
-        popper_html += "<strong>Taxonomic prediction</strong><br>" +
+        popper_html += "<strong>Taxonomic assignation</strong><br>" +
                        tpred_level + ": " +
                        neigh.tax_prediction[tpred_level][p].description + "<br><br>"
 
