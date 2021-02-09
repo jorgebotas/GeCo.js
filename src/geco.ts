@@ -42,12 +42,12 @@ function get_parameters(selector : string) : ParamSet {
     var showTree : boolean = $("input#showTree").is(":checked");
     // Show gene preferred name
     var showName : boolean = $("input#geneName").is(":checked");
-    // Show gene preferred name
-    var nContig : boolean = $("input#nContig").is(":checked");
+    // Show number of contigs for each consensus
+    //var nContig : boolean = $("input#nContig").is(":checked");
     // Scale gene length?
     var scaleSize : boolean = $("input#scaleSize").is(":checked");
     // Show genomic position of gene
-    var showPos : boolean = $("input#showPos").is(":checked");
+    //var showPos : boolean = $("input#showPos").is(":checked");
     // Highlight anchor gene
     var highlightAnchor : boolean = $("input#highlightAnchor").is(":checked");
 
@@ -64,23 +64,23 @@ function get_parameters(selector : string) : ParamSet {
         "scaleDist" : distScale == "scaleDist",
         "scaleSize" : scaleSize,
         "customScale" : customScale,
-        "nContig" : nContig,
+        //"nContig" : nContig,
         "highlightAnchor" : highlightAnchor
     }
 
-    if (showPos) {
-        fields["showPos"] = {
-            rep : "text",
-            y : +Object.keys(fields).length + 1
-        }
-    }
-    if (nContig) {
-        fields["n"] = {
-            rep : "text",
-            text: "",
-            y : +Object.keys(fields).length + 1
-        }
-    } 
+    //if (showPos) {
+        //fields["showPos"] = {
+            //rep : "text",
+            //y : +Object.keys(fields).length + 1
+        //}
+    //}
+    //if (nContig) {
+        //fields["n"] = {
+            //rep : "text",
+            //text: "",
+            //y : +Object.keys(fields).length + 1
+        //}
+    //} 
 
     if (taxChecked) {
         fields["tax_prediction"] = {
@@ -266,7 +266,7 @@ export default async function launch_GeCo(selector : string,
                               nenv,
                               colors,
                               egg_levels)
-    popper_click();
+    popper_click(selector);
 }
 
 window.launch_GeCo = launch_GeCo;

@@ -31,7 +31,7 @@ export function get_levels(data : {[index : string] : Gene},
     var levels = new Set();
       (<any>Object).entries(data).forEach(([gene, d] : [string, Gene]) => {
           if (gene != "NA") {
-              (<any>Object).values(d.neighborhood).forEach((neigh : Gene)=> {
+              (<any>Object).values(d.neighbourhood).forEach((neigh : Gene)=> {
                   try{
                       (<any>Object).keys(neigh[notation]).forEach(
                           (l : number|string) => {
@@ -64,7 +64,7 @@ function get_unique_functions(data : {[index:string] : Gene},
                                     nside: NSide) : object {
     var unique : {[index: string] : string} = {};
     (<any>Object).values(data).forEach((d : Gene) => {
-      (<any>Object).entries(d.neighborhood).forEach(([pos, n] : 
+      (<any>Object).entries(d.neighbourhood).forEach(([pos, n] : 
                                             [number|string, Gene]) => {
           if (Number(pos) <= nside.downstream && Number(pos) >= -nside.upstream){
                   if (notation == "eggNOG" || 
@@ -132,7 +132,7 @@ async function draw_newick(selector : string,
     buildNewickNodes(newick);
 
     buildPhylogram(selector + ' div#phylogram', newick, {
-      width: 50,
+      width: 100,
       height: nleaf * nfield * 18,
       name_fields: name_fields,
     });
@@ -449,7 +449,7 @@ export function erase_graph(selector : string, div_id : string, full_reset : boo
             .attr("selected", "")
             .html("KEGG");
         enot.append("option")
-            .attr("value", "preferred_name")
+            .attr("value", "code")
             .html("Preferred name");
         enot.append("option")
             .attr("value", "KEGG")
@@ -490,7 +490,7 @@ function get_arrow(rect : Rect,
                    ordinate: number,
                    strand : "+"|"-") {
 
-    if (strand == "-") {
+    if (strand == "-" || +strand < 0) {
         var path : string = [
         "M",
         x0 + 1,
@@ -727,8 +727,7 @@ function gene_hover(selector: string,
         leaf.select("circle")
           .style("stroke", "var(--highlight)")
           .style("fill", "var(--highlight)")
-          .style("transition", "stroke 0.3s")
-          .style("transition", "fill 0.3s");
+          .style("transition", "stroke 0.3s, fill 0.3s");
         leaf.select("text")
             .style("fill", "var(--highlight)")
             .style("transition", "fill 0.3s");
@@ -746,8 +745,7 @@ function gene_hover(selector: string,
         leaf.select("circle")
           .style("stroke", "var(--dark-purple)")
           .style("fill", "var(--purple)")
-          .style("transition", "stroke 0.3s")
-          .style("transition", "fill 0.3s");
+          .style("transition", "stroke 0.3s, fill 0.3s");
         leaf.select("text")
             .style("fill", "var(--dark-gray)")
             .style("transition", "fill 0.3s");
@@ -873,11 +871,11 @@ function draw_neighbor(selector : string,
             if (+pos < 0) { 
                 x0 += - gene_rect.w + rect.ph;
                 xf = x0 - 2*rect.ph/5;
-                if (neigh.strand == "+"){
+                if (neigh.strand == "+" || +neigh.strand > 0){
                     x0 -= 2*rect.ph/5;
                 }
             } else {
-                if (neigh.strand == "-") {
+                if (neigh.strand == "-" || +neigh.strand < 0) {
                     x0 += 2*rect.ph / 5;
                     xf = x0 + gene_rect.w - rect.ph;
                 } else {
@@ -887,14 +885,14 @@ function draw_neighbor(selector : string,
 
         } else {
             x0 = abcissa * rect.w + Math.abs(rect.w/2 - gene_rect.w/2);
-            if (neigh.strand == "-") {
+            if (neigh.strand == "-" || +neigh.strand < 0) {
                 x0 += rect.ph / 5;
             } else {
                 x0 -= rect.ph / 5;
             }
         }
         if (pos == 0 && fields.n) {
-            let n = d.neighborhood.n || neigh.n_contig || " ";
+            let n = d.neighbourhood.n || neigh.n_contig || " ";
             atext(g,
                   n + fields.n.text,
                   nside.upstream * rect.w + rect.w / 2 - rect.ph / 1.4 - 2.5 * (String(n).length-1),
@@ -916,7 +914,7 @@ function draw_neighbor(selector : string,
             if (identifiers_ks.length != 0 && 
                 ["", "NA", "undefined"].every(i => i!=identifiers_ks[0])){
                 let ids = identifiers_ks;
-                 if (neigh.strand == "-") {
+                 if (neigh.strand == "-" || +neigh.strand < 0) {
                     arrow_fill = String(fn_palette(ids[0]));
                     arrow_class = ids[0];
                 } else { 
@@ -971,9 +969,9 @@ function draw_neighbor(selector : string,
               .attr("class", "c" + arrow_class);
 
             // Add hoverable stroke that sorrounds gene arrow
-            let central_gene : string = d.neighborhood[0].gene
+            let central_gene : string = d.neighbourhood[0].gene
              g.append("path")
-              .attr("class", "stroke" + id_string + " ord" + central_gene)
+              .attr("class", "stroke" + id_string + " ord" + clean_string(central_gene))
               .attr("id", "idx" + counter)
               .attr("d", stroke_path)
               .style("opacity", 0)
@@ -1004,14 +1002,14 @@ function draw_neighbor(selector : string,
                        .attr("class", "notation")
                        .style("opacity", 0);
 
-            if(options.showName && ["", "NA", undefined].every(i => i!=neigh.preferred_name)){
+            if(options.showName && ["", "NA", undefined].every(i => i!=neigh.code)){
                 // Only display when it fits
                 //&& gene_rect.w - gene_rect.ph >= 35
-                //&& neigh.preferred_name.length < 7) {
+                //&& neigh.code.length < 7) {
 
                 // // 6 is size per char
                 let size : number = +Math.floor(gene_rect.w / 13.5); 
-                let name : string = neigh.preferred_name;
+                let name : string = neigh.code;
                 if (size < name.length){
                     name = name.slice(0, size);
                     
@@ -1061,7 +1059,7 @@ function draw_neighbor(selector : string,
                       let start = neigh.start;
                       let cx = +x0;
                       let tx = +x0;
-                      if (neigh.strand == "-"){
+                      if (neigh.strand == "-" || +neigh.strand < 0){
                           cx += gene_rect.w - rect.ph;
                           tx = cx - 5 * String(start).length;
                       }
@@ -1079,7 +1077,8 @@ function draw_neighbor(selector : string,
                 } catch {}
             })
 
-            create_popper(pos,
+            create_popper(selector,
+                          pos,
                           neigh,
                           notation,
                           taxlevel,
@@ -1104,7 +1103,7 @@ function draw_neighbor(selector : string,
  *                           eggNOG information. Default: 2 (Bacteria)
  * @param {number} nside: integer defining number of genes upstream and
  *                        downstream of central gene to be displayed
- * @param {number} nenv: maximum number of genes in neighborhood
+ * @param {number} nenv: maximum number of genes in neighbourhood
  *                       (central gene included)
  * @param {number} context_width: width of genomic context graph
  *                                (legend excluded)
@@ -1276,7 +1275,7 @@ export async function draw_genomic_context(selector : string,
         central_pos++;
 
         function swap_strand(s : "+"|"-", reference_s : "+"|"-") {
-            if (reference_s == "+"){
+            if (reference_s == "+" || +reference_s > 0){
                 return s;
             } else {
                 if (s == "+"){
@@ -1286,20 +1285,23 @@ export async function draw_genomic_context(selector : string,
                 }
             }
         }
-        if (d.neighborhood[0].strand == "-") {
+        if (d.neighbourhood[0].strand == "-" || +d.neighbourhood[0].strand < 0) {
+            console.log(d.neighborhood[0].unigene)
             let swapped : {[index:string]:Gene} = {};
             for(let p = -nenv; p <= nenv; p++) {
-                let swapped_neigh : Gene = d.neighborhood[p];
+                let swapped_neigh : Gene = d.neighbourhood[p];
                 if (swapped_neigh) {
                     let n_strand : "+"|"-" = swapped_neigh.strand ? swapped_neigh.strand : "+";
-                    swapped_neigh.strand = swap_strand(n_strand, 
-                                                d.neighborhood[0].strand);
-                    console.log(d.neighborhood[p])
-                    console.log(swapped_neigh)
+                    if (swapped_neigh.gene != "NA") {
+                        swapped_neigh.strand = swap_strand(n_strand, 
+                                                    d.neighbourhood[0].strand);
+                    } else {
+                        swapped_neigh.strand = "+";
+                    }
                 }
                 swapped[-p] = swapped_neigh;
             }
-            
+            d.neighbourhood = swapped;
         }
 
         // Render neighbor-selection rectangle upon hover
@@ -1332,13 +1334,13 @@ export async function draw_genomic_context(selector : string,
         var collapsedDistance = 2;
         var initialX : {[index:string]:number} =  {
             "xf" : (width - margin.right)/2 - rect.w/2,
-            "start" : +d.neighborhood[0].start,
-            "end" : +d.neighborhood[0].end
+            "start" : +d.neighbourhood[0].start,
+            "end" : +d.neighbourhood[0].end
         }
         var lastX : {[index:string]:number} =  initialX;
 
         for (var pos = 0; pos <= nside.downstream; pos++) {
-            var neigh : Gene = d.neighborhood[pos];
+            var neigh : Gene = d.neighbourhood[pos];
             var xf : number;
             var x0 : number;
             
@@ -1393,7 +1395,7 @@ export async function draw_genomic_context(selector : string,
         }
         lastX = initialX;
         for (var pos = -1; pos >= -nside.upstream; pos--) {
-            var neigh : Gene = d.neighborhood[pos];
+            var neigh : Gene = d.neighbourhood[pos];
             var xf : number;
             var x0 : number;
 
@@ -1501,7 +1503,7 @@ export async function draw_genomic_context(selector : string,
  *                         Default: "graph" <div id="graph"></div>
  * @param {JSON object} data: genomic context information as JSON object
  * @param {TreeNode} newick: (optional) phylogenetic tree in Newick format.
- * @param {number} nenv: maximum number of genes in neighborhood
+ * @param {number} nenv: maximum number of genes in neighbourhood
  *                       (central gene included)
  */
 export async function visualize_geco(selector : string,
@@ -1553,7 +1555,7 @@ export async function visualize_geco(selector : string,
                                options,
                                colors,
                                newick,
-                               ["name", "tax id", "gene"]);
+                               ["name", "tax id", "tax desc", "gene"]);
     viz.querySelector("div#submit-params").scrollIntoView({behavior: "smooth"});
     d3viz.select("div#download-btns").style("visibility", "visible")
                           .style("opacity", 1);

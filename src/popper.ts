@@ -20,7 +20,9 @@ function get_popper_html(pos : number,
                          neigh : Gene,
                          notation : string,
                          taxlevel : (number|string),
-                         tpred_level : string) : string{
+                         tpred_level : string,
+                         unique_contigs? : boolean,
+                         counter? : number) : string{
     var kegg_links = "<ul id='popper'>\
         <li id='popper-cog'>KEGG</li>";
     var eggnog_data = "<ul id='popper'>\
@@ -149,14 +151,17 @@ function get_popper_html(pos : number,
     if (neigh.n_contig) {
         popper_html += "Analysed contigs: " + neigh.n_contig + "<br>";
     }
-     if (neigh.gene) {
+     if (neigh.gene && unique_contigs) {
         var pathInit = window.location.pathname.split("/")[1];
         popper_html += "<a href='/" + pathInit + "/genecontext/" + 
                        neigh.gene +"' target='_blank'>\
                                  Unique contigs</a><br>";
      }
      if (neigh.domains) {
-         popper_html += "<div class='py-2' id='dom" + neigh.gene + "'></div>"
+         let dom_id = 'dom';
+         dom_id = counter ? dom_id + String(counter) : dom_id;
+         dom_id += neigh.gene;
+         popper_html += "<div class='py-2' id='" + dom_id + "'></div>"
      }
      if (neigh.GMGFam) {
         popper_html += "<br><strong>GMGFam</strong><br>" +
@@ -189,10 +194,11 @@ function get_popper_html(pos : number,
  * @param {string} popper_html: popover content
  * @param {string} popper_class
  */
-export function apopper(id : string,
+export function apopper(selector : string,
+                        id : string,
                         popper_html : string,
                         popper_class : string) {
-    var popper_d3 = select("body")
+    var popper_d3 = select(selector)
                    .append("div")
                    .attr("class", "popper " + popper_class)
                    .attr("id", id);
@@ -203,8 +209,8 @@ export function apopper(id : string,
     // popper arrow
     popper_d3.append("div")
              .attr("class", "popper-arrow d-none");
-    var popper : HTMLElement = document.querySelector(".popper#" + id);
-    var ref_text : HTMLElement = document.querySelector("text#" + id);
+    var popper : HTMLElement = document.querySelector(selector + " .popper#" + id);
+    var ref_text : HTMLElement = document.querySelector(selector + " text#" + id);
       function create() {
           // Popper Instance
           createPopper(ref_text, popper, {
@@ -233,7 +239,7 @@ export function apopper(id : string,
       }
 
       function hide() {
-        var poppers = document.querySelectorAll(".popper")
+        var poppers = document.querySelectorAll(selector + " .popper")
         poppers.forEach(popper => {
             popper.removeAttribute('data-show');
         });
@@ -255,13 +261,14 @@ export function apopper(id : string,
  * @param {number} counter: unique identifier.
  *                          Associated to particular gene in graph
  */
-export function create_popper(pos : number,
+export function create_popper(selector : string,
+                       pos : number,
                        neigh : Gene, 
                        notation : string,
                        taxlevel : (number|string),
                        tpred_level : string,
                        counter : number) {
-    var popper_d3 = select("div#synteny")
+    var popper_d3 = select(selector + " div#synteny")
                    .append("div")
                    .attr("class", "popper col-md-4")
                    .attr("id", "idx" + counter);
@@ -269,7 +276,9 @@ export function create_popper(pos : number,
                                       neigh,
                                       notation,
                                       taxlevel,
-                                      tpred_level);
+                                      tpred_level,
+                                      true,
+                                      counter);
     // popper content
     popper_d3.append("div")
              .attr("class", "popper-content")
@@ -324,17 +333,23 @@ export function create_popper(pos : number,
         var palette = scale.ordinal()
                         .domain(doms)
                         .range(colors);
-        draw_protDomains("dom" + neigh.gene, neigh.domains, neigh.size, 250, 7, palette)
+        draw_protDomains(selector + " #dom" + counter + neigh.gene, 
+                         neigh.domains,
+                         neigh.size, 
+                         250, 
+                         7, 
+                         palette,
+                         'https://pfam.xfam.org/family/')
     }
     // popper arrow
     popper_d3.append("div")
              .attr("class", "popper-arrow");
 
-    var popper : HTMLElement = document.querySelector(".popper#idx" + counter);
+    var popper : HTMLElement = document.querySelector(selector + " .popper#idx" + counter);
 
-    var rects = document.querySelectorAll("rect#idx" + counter);
-    var paths = document.querySelectorAll("path#idx" + counter);
-    var ref_text = document.querySelector("text#idx" + counter);
+    var rects = document.querySelectorAll(selector + " rect#idx" + counter);
+    var paths = document.querySelectorAll(selector + " path#idx" + counter);
+    var ref_text = document.querySelector(selector + " text#idx" + counter);
 
       function create() {
           // Popper Instance
@@ -363,7 +378,7 @@ export function create_popper(pos : number,
       }
 
       function hide() {
-        var poppers = document.querySelectorAll(".popper")
+        var poppers = document.querySelectorAll(selector + " .popper")
         poppers.forEach(popper => {
             popper.removeAttribute('data-show');
         });
@@ -385,9 +400,9 @@ export function create_popper(pos : number,
  * required: .popper class div
  * @function popper_click
  */
-export function popper_click() : void {
+export function popper_click(selector : string) : void {
     $(document).click(function(e : any) {
-        var poppers = document.querySelectorAll(".popper")
+        var poppers = document.querySelectorAll(selector + " .popper")
         poppers.forEach(popper => {
             popper.removeAttribute('data-show');
         });
@@ -399,14 +414,16 @@ export function popper_click() : void {
             targetId = e.target.id;
         } 
         if (targetId.slice(0,3)=="idx"){
-            var popper = document.querySelector(".popper#"+targetId);
-            var refbound = document.querySelector("text#"+targetId)
+            console.log(selector)
+            console.log(selector + " text#"+targetId)
+            var popper = document.querySelector(selector + " .popper#"+targetId);
+            var refbound = document.querySelector(selector + " text#"+targetId)
                                    .getBoundingClientRect();
               if (refbound.right+195 > window.innerWidth){
-                  select(".popper#"+targetId).select(".popper-arrow")
+                  select(selector + " .popper#"+targetId).select(selector + " .popper-arrow")
                         .style("right", window.innerWidth-refbound.right+'px');
               } else if(refbound.left < 195) {
-                  select(".popper#"+targetId).select(".popper-arrow")
+                  select(selector + " .popper#"+targetId).select(selector + " .popper-arrow")
                         .style("left", refbound.left+'px')
                         .style("right", "");
               }
@@ -415,5 +432,3 @@ export function popper_click() : void {
 
     });
 };
-
-

@@ -94,3 +94,12 @@ export interface TreeNode {
     x? : number;
     y? : number
 }
+
+
+export interface Domain {
+    class : string;
+    shape : string;
+    start : number;
+    end : number;
+    c? : number; // center of circle if shape == 'circle'
+}

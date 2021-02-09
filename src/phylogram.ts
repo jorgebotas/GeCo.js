@@ -30,7 +30,8 @@ function rightAngleDiagonal () {
 }
 
 
-function styleNodes(vis : d3.Selection<HTMLElement>,
+function styleNodes(selector : string,
+                    vis : d3.Selection<HTMLElement>,
                     nodes : TreeNode[],
                     fields? : string[]){
     // Leaf nodes
@@ -107,11 +108,27 @@ function styleNodes(vis : d3.Selection<HTMLElement>,
             return children.join(" g")
         });
 
+        let i_name : number;
+        if (fields) {
+              i_name = fields.indexOf('gene');
+              i_name = i_name < 0 ? fields.indexOf('name') : i_name;
+
+        } else {
+            i_name = 0;
+        }
       vis.selectAll('g.leaf.node')
-        .attr("id", function(d : TreeNode) { return "g" + clean_string(d.name); });
+        .attr("id", function(d : TreeNode) { 
+            let name = d.name.split(".")[i_name];
+            if (!name) { name = d.name.split(".")[0] }
+            return "g" + clean_string(name); 
+        });
       vis.selectAll('g.leaf.node')
         .append("svg:text")
-        .attr("id", function(d : TreeNode) { return "idxt" + clean_string(d.name); })
+        .attr("id", function(d : TreeNode) { 
+            let name = d.name.split(".")[i_name];
+            if (!name) { name = d.name.split(".")[0] }
+            return "idxt" + clean_string(name); 
+        })
         .attr("dx", 13)
         .attr("dy", 5)
         .attr("text-anchor", "start")
@@ -139,7 +156,12 @@ function styleNodes(vis : d3.Selection<HTMLElement>,
                         content += "<p>" + fields[i] + ": " + n + "</p>";
                     }
                 })
-                apopper("idxt" + clean_string(d.name), content, "col-md-2");
+                let gene = name_split[fields.indexOf("gene")]
+                if (!gene) { gene = name_split[i_name]}
+                apopper(selector, 
+                    "idxt" + clean_string(gene),
+                    content, 
+                    "col-md-2");
             }
           })
       } 
@@ -215,46 +237,6 @@ export function draw_scale(vis : d3.Selection<HTMLElement>,
         .attr('fill', 'var(--dark-gray)')
         .text(ticks[1] + units);
 }
-
-
-export function draw_ticks(vis : d3.Selection<HTMLElement>,
-                     scale : scale.linear,
-                     x : number,
-                     y : number,
-                     units = "",
-                    ticks? : {
-                        start : number,
-                        stop : number,
-                        count : number
-                    }){
-    let tickSet = scale.ticks(10);
-    if (ticks) {
-      tickSet = scale.ticks(0, ticks.stop, ticks.count)
-    }
-  vis.selectAll('line')
-      .data(tickSet)
-    .enter().append('svg:line')
-      .attr('y1', 0)
-      .attr('y2', y)
-      .attr('x1', scale)
-      .attr('x2', scale)
-      .attr("stroke", "#ddd");
-
-  vis.selectAll("text.rule")
-      .data(tickSet)
-    .enter().append("svg:text")
-      .attr("class", "rule")
-      .attr("x", scale)
-      .attr("y", 0)
-      .attr("dy", -3)
-      .attr("text-anchor", "middle")
-      .attr('font-size', '8px')
-      .attr('fill', '#ccc')
-      .text(function(d:number) { 
-          return (Math.round(d*100) / 100) + units; 
-      });
-}
-
 
 export function buildPhylogram(selector : string, 
                         nodes : any,
@@ -333,7 +315,7 @@ export function buildPhylogram(selector : string,
         .attr("transform", function(d : TreeNode) {
             return "translate(" + d.y + "," + d.x + ")";
         })
-    styleNodes(vis, nodes,  options.name_fields);
+    styleNodes(selector, vis, nodes,  options.name_fields);
 
     var largest_abcissa = 0
     nodes.forEach((n : TreeNode) => {
