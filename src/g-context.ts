@@ -1263,17 +1263,10 @@ export async function draw_genomic_context(selector : string,
         "sup" : 0
     }
 
-    // Visit every gene entry and their neighbors to
-    // render synteny visualization
-    await (<any>Object).entries(data).forEach(([central_gene, d] : [string, Gene]) => {
-
-
-        //let central_gene : string = d.gene; //central;
-        // y coordinate
-        var ordinate = get_ordinate(viz, central_gene, central_pos, rect, nfield);
-        largest_ordinate = Math.max(largest_ordinate, ordinate);
-        central_pos++;
-
+    async function swapData(unprocessedData : { [index: string]: Gene; }) {
+        var  swappedData : { [index: string]: Gene} = Object.assign({}, unprocessedData);
+        await (<any>Object).entries(Object.assign({}, unprocessedData))
+            .forEach(([central_gene, d] : [string, Gene]) => {
         function swap_strand(s : "+"|"-", reference_s : "+"|"-") {
             if (reference_s == "+" || +reference_s > 0){
                 return s;
@@ -1286,7 +1279,7 @@ export async function draw_genomic_context(selector : string,
             }
         }
         if (d.neighbourhood[0].strand == "-" || +d.neighbourhood[0].strand < 0) {
-            console.log(d.neighborhood[0].unigene)
+            console.log(d.neighbourhood[0])
             let swapped : {[index:string]:Gene} = {};
             for(let p = -nenv; p <= nenv; p++) {
                 let swapped_neigh : Gene = d.neighbourhood[p];
@@ -1301,9 +1294,23 @@ export async function draw_genomic_context(selector : string,
                 }
                 swapped[-p] = swapped_neigh;
             }
-            d.neighbourhood = swapped;
+            swappedData[central_gene].neighbourhood = swapped;
         }
+        })
+        return swappedData;
+    }
+    data = await swapData(data);
 
+    // Visit every gene entry and their neighbors to
+    // render synteny visualization
+    await (<any>Object).entries(data).forEach(([central_gene, d] : [string, Gene]) => {
+
+
+        //let central_gene : string = d.gene; //central;
+        // y coordinate
+        var ordinate = get_ordinate(viz, central_gene, central_pos, rect, nfield);
+        largest_ordinate = Math.max(largest_ordinate, ordinate);
+        central_pos++;
         // Render neighbor-selection rectangle upon hover
         var gene_path = g.append("path")
                             .attr("class", "archoring-path")
