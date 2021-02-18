@@ -25,6 +25,8 @@ function get_popper_html(pos : number,
                          counter? : number) : string{
     var kegg_links = "<ul id='popper'>\
         <li id='popper-cog'>KEGG</li>";
+    var card_data = "<ul id='popper'>\
+        <li id='popper-cog'>CARD</li>";
     var eggnog_data = "<ul id='popper'>\
         <li id='popper-cog'>eggNOG</li>";
     if (pos == 0) {
@@ -123,11 +125,27 @@ function get_popper_html(pos : number,
      } catch {
         eggnog_data = "";
      }
+    // CARD data
+     try {
+            var card_ids = (<any>Object).keys(neigh.CARD);
+            var card : any = neigh.CARD;
+            card_ids = remove_item(card_ids, 'scores');
+            if (card_ids[0] != "" && card_ids.length != 0){
+                 card_ids.forEach((id : number|string) => {
+                    let desc = card[id];
+                    card_data += "<li><em>" + id + "</em> "
+                              +  desc + "</li>";
+                })
+                card_data += "</ul>";
+            } else { card_data = "" ;};
 
+     } catch {
+         card_data= "";
+     }
 
     var popper_html = "";
-    if (["", "NA", undefined].every(i => i!=neigh.preferred_name)){
-        popper_html += neigh.preferred_name + "<br>";
+    if (["", "NA", undefined].every(i => i!=neigh.code)){
+        popper_html += neigh.code + "<br>";
     }
     if (neigh.size) {
         popper_html += "Length: " + neigh.size + "bp<br>";
@@ -174,10 +192,11 @@ function get_popper_html(pos : number,
                        neigh.tax_prediction[tpred_level][p].description + "<br><br>"
 
      } catch {}
-     if (kegg_links != "" || eggnog_data != "") {
+     if (kegg_links != "" || eggnog_data != "" || card_data != "") {
          popper_html += "<div id='popper'>" +
                         eggnog_data +
                         kegg_links +
+                        card_data +
                         "</div>";
      }
      if (neigh.metadata) {
@@ -414,8 +433,6 @@ export function popper_click(selector : string) : void {
             targetId = e.target.id;
         } 
         if (targetId.slice(0,3)=="idx"){
-            console.log(selector)
-            console.log(selector + " text#"+targetId)
             var popper = document.querySelector(selector + " .popper#"+targetId);
             var refbound = document.querySelector(selector + " text#"+targetId)
                                    .getBoundingClientRect();

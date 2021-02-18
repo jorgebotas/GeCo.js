@@ -66,7 +66,9 @@ function get_unique_functions(data : {[index:string] : Gene},
     (<any>Object).values(data).forEach((d : Gene) => {
       (<any>Object).entries(d.neighbourhood).forEach(([pos, n] : 
                                             [number|string, Gene]) => {
-          if (Number(pos) <= nside.downstream && Number(pos) >= -nside.upstream){
+          if (Number(pos) <= nside.downstream 
+              && Number(pos) >= -nside.upstream
+              && n){
                   if (notation == "eggNOG" || 
                       notation == "tax_prediction"){
                       (<any>Object).entries(n[notation]).forEach(([l, d] :
@@ -457,6 +459,9 @@ export function erase_graph(selector : string, div_id : string, full_reset : boo
         enot.append("option")
             .attr("value", "eggNOG")
             .html("eggNOG");
+        enot.append("option")
+            .attr("value", "CARD")
+            .html("CARD");
         enot.append("option")
             .attr("value", "GMGFam")
             .html("GMGFam");
@@ -1262,44 +1267,6 @@ export async function draw_genomic_context(selector : string,
         "inf" : 100000,
         "sup" : 0
     }
-
-    async function swapData(unprocessedData : { [index: string]: Gene; }) {
-        var  swappedData : { [index: string]: Gene} = Object.assign({}, unprocessedData);
-        await (<any>Object).entries(Object.assign({}, unprocessedData))
-            .forEach(([central_gene, d] : [string, Gene]) => {
-        function swap_strand(s : "+"|"-", reference_s : "+"|"-") {
-            if (reference_s == "+" || +reference_s > 0){
-                return s;
-            } else {
-                if (s == "+"){
-                    return "-";
-                } else if(s == "-") {
-                    return "+";
-                }
-            }
-        }
-        if (d.neighbourhood[0].strand == "-" || +d.neighbourhood[0].strand < 0) {
-            console.log(d.neighbourhood[0])
-            let swapped : {[index:string]:Gene} = {};
-            for(let p = -nenv; p <= nenv; p++) {
-                let swapped_neigh : Gene = d.neighbourhood[p];
-                if (swapped_neigh) {
-                    let n_strand : "+"|"-" = swapped_neigh.strand ? swapped_neigh.strand : "+";
-                    if (swapped_neigh.gene != "NA") {
-                        swapped_neigh.strand = swap_strand(n_strand, 
-                                                    d.neighbourhood[0].strand);
-                    } else {
-                        swapped_neigh.strand = "+";
-                    }
-                }
-                swapped[-p] = swapped_neigh;
-            }
-            swappedData[central_gene].neighbourhood = swapped;
-        }
-        })
-        return swappedData;
-    }
-    data = await swapData(data);
 
     // Visit every gene entry and their neighbors to
     // render synteny visualization
